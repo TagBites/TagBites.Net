@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Package info -->
+  <PropertyGroup>
+    <PackageId>TagBites.Net</PackageId>
+    <Product>TagBites.Net</Product>
+    <Title>TagBites.Net</Title>
+
+    <Description>Lightweight and simple TCP client-server library for .NET.</Description>
+    <PackageTags>TagBites.Net;Net;TCP;IP;TCP/IP;server;client;client-server</PackageTags>
+    
+    <PackageProjectUrl>https://www.tagbites.com/net</PackageProjectUrl>
+    <PackageIconUrl>https://www.tagbites.com/net/icon.png</PackageIconUrl>
+
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseUrl>https://www.tagbites.com/net/license.txt</PackageLicenseUrl>
+    
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/TagBites/TagBites.Net-Docs.git</RepositoryUrl>
+  </PropertyGroup>
+
+  <!-- Targets -->
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
+  </PropertyGroup>
+
+  <!-- Build -->
+  <PropertyGroup>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- References -->
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.DispatchProxy" Version="4.3.0" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
+  </ItemGroup>
+
+  <!-- Sources -->
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+</Project>
