@@ -6,8 +6,8 @@
     <Product>TagBites.Net</Product>
     <Title>TagBites.Net</Title>
 
-    <Description>Lightweight and simple TCP client-server library for .NET.</Description>
-    <PackageTags>TagBites.Net;Net;TCP;IP;TCP/IP;server;client;client-server</PackageTags>
+    <Description>Lightweight and simple TCP client-server .NET library with RMI support.</Description>
+    <PackageTags>TagBites.Net;Net;TCP;IP;TCP/IP;server;client;client-server;RMI;Remote Method Invocation</PackageTags>
     
     <PackageProjectUrl>https://www.tagbites.com/net</PackageProjectUrl>
     <PackageIconUrl>https://www.tagbites.com/net/icon.png</PackageIconUrl>

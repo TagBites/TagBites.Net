@@ -12,9 +12,21 @@ namespace TagBites.Net
     /// </summary>
     public abstract class NetworkClient : IDisposable
     {
+        /// <summary>
+        /// 
+        /// </summary>
         public event EventHandler<NetworkConnectionClosedEventArgs> Disconnected;
+        /// <summary>
+        /// 
+        /// </summary>
         public event EventHandler<NetworkConnectionMessageEventArgs> Received;
+        /// <summary>
+        /// 
+        /// </summary>
         public event EventHandler<NetworkConnectionMessageErrorEventArgs> ReceivedError;
+        /// <summary>
+        /// 
+        /// </summary>
         public event EventHandler<NetworkConnectionControllerResolveEventArgs> ControllerResolve;
 
         private NetworkConnection _connection;
@@ -34,9 +46,9 @@ namespace TagBites.Net
                     if (_connection != null)
                     {
                         Connection.Closed -= OnConnectionClosed;
-                        Connection.Received -= OnMessageReceived;
-                        Connection.ReceivedError -= OnMessageReceivedError;
-                        Connection.ControllerResolve -= OnConnectionControllerResolve;
+                        Connection.Received -= OnReceived;
+                        Connection.ReceivedError -= OnReceivedError;
+                        Connection.ControllerResolve -= OnControllerResolve;
                     }
 
                     _connection = value;
@@ -44,9 +56,9 @@ namespace TagBites.Net
                     if (_connection != null)
                     {
                         Connection.Closed += OnConnectionClosed;
-                        Connection.Received += OnMessageReceived;
-                        Connection.ReceivedError += OnMessageReceivedError;
-                        Connection.ControllerResolve += OnConnectionControllerResolve;
+                        Connection.Received += OnReceived;
+                        Connection.ReceivedError += OnReceivedError;
+                        Connection.ControllerResolve += OnControllerResolve;
                     }
                 }
             }
@@ -68,22 +80,43 @@ namespace TagBites.Net
         }
 
 
+        /// <summary>
+        /// Returns the remote controller.
+        /// </summary>
+        /// <typeparam name="T">Type of controller.</typeparam>
+        /// <returns>Remote controller.</returns>
         public T GetController<T>()
         {
             ThrowIfDisconnected();
             return Connection.GetController<T>();
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
         public async Task SendAsync(object message)
         {
             ThrowIfDisconnected();
             await Connection.WriteAsync(message).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Invokes <see cref="Disconnected"/> event.
+        /// </summary>
         protected virtual void OnConnectionClosed(object sender, NetworkConnectionClosedEventArgs e) => Disconnected?.Invoke(this, e);
-        protected virtual void OnConnectionControllerResolve(object sender, NetworkConnectionControllerResolveEventArgs e) => ControllerResolve?.Invoke(this, e);
-        protected virtual void OnMessageReceived(object sender, NetworkConnectionMessageEventArgs e) => Received?.Invoke(this, e);
-        protected virtual void OnMessageReceivedError(object sender, NetworkConnectionMessageErrorEventArgs e) => ReceivedError?.Invoke(this, e);
+        /// <summary>
+        /// Invokes <see cref="Received"/> event.
+        /// </summary>
+        protected virtual void OnReceived(object sender, NetworkConnectionMessageEventArgs e) => Received?.Invoke(this, e);
+        /// <summary>
+        /// Invokes <see cref="ReceivedError"/> event.
+        /// </summary>
+        protected virtual void OnReceivedError(object sender, NetworkConnectionMessageErrorEventArgs e) => ReceivedError?.Invoke(this, e);
+        /// <summary>
+        /// Invokes <see cref="ControllerResolve"/> event.
+        /// </summary>
+        protected virtual void OnControllerResolve(object sender, NetworkConnectionControllerResolveEventArgs e) => ControllerResolve?.Invoke(this, e);
 
         /// <summary>
         /// Closes the connection.

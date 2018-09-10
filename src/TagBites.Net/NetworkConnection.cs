@@ -13,8 +13,14 @@ using TagBites.Net.Licensing;
 
 namespace TagBites.Net
 {
+    /// <summary>
+    /// Provides data for the <see cref="E:TagBites.Net.NetworkConnection.Closed"/> event.
+    /// </summary>
     public class NetworkConnectionClosedEventArgs : EventArgs
     {
+        /// <summary>
+        /// Gets a exception. Returns <c>null</c> when connection has been closed normally.
+        /// </summary>
         public Exception Exception { get; }
 
         internal NetworkConnectionClosedEventArgs(Exception exception)
@@ -22,17 +28,15 @@ namespace TagBites.Net
             Exception = exception;
         }
     }
-    public class NetworkConnectionMessageErrorEventArgs : EventArgs
-    {
-        public Exception Exception { get; }
 
-        internal NetworkConnectionMessageErrorEventArgs(Exception exception)
-        {
-            Exception = exception;
-        }
-    }
+    /// <summary>
+    /// Provides data for the <see cref="E:TagBites.Net.NetworkConnection.Received"/> event.
+    /// </summary>
     public class NetworkConnectionMessageEventArgs : EventArgs
     {
+        /// <summary>
+        /// Gets a message.
+        /// </summary>
         public object Message { get; }
 
         internal NetworkConnectionMessageEventArgs(object message)
@@ -40,10 +44,39 @@ namespace TagBites.Net
             Message = message;
         }
     }
+
+    /// <summary>
+    /// Provides data for the <see cref="E:TagBites.Net.NetworkConnection.ReceivedError"/> event.
+    /// </summary>
+    public class NetworkConnectionMessageErrorEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Gets a exception.
+        /// </summary>
+        public Exception Exception { get; }
+
+        internal NetworkConnectionMessageErrorEventArgs(Exception exception)
+        {
+            Exception = exception;
+        }
+    }
+
+    /// <summary>
+    /// Provides data for the <see cref="E:TagBites.Net.NetworkConnection.ControllerResolve"/> event.
+    /// </summary>
     public class NetworkConnectionControllerResolveEventArgs : EventArgs
     {
+        /// <summary>
+        /// Full name of controller to resolve.
+        /// </summary>
         public string ControllerTypeName { get; }
+        /// <summary>
+        /// Type of controller to resolve.
+        /// </summary>
         public Type ControllerType { get; }
+        /// <summary>
+        /// Gets or sets resolved controller.
+        /// </summary>
         public object Controller { get; set; }
 
         internal NetworkConnectionControllerResolveEventArgs(string controllerTypeName, Type controllerType)
@@ -58,9 +91,21 @@ namespace TagBites.Net
     /// </summary>
     public sealed class NetworkConnection : IDisposable
     {
+        /// <summary>
+        /// Occurs when connection closes.
+        /// </summary>
         public event EventHandler<NetworkConnectionClosedEventArgs> Closed;
+        /// <summary>
+        /// Occurs when receives message.
+        /// </summary>
         public event EventHandler<NetworkConnectionMessageEventArgs> Received;
+        /// <summary>
+        /// Occurs when it was unable to receive message (eg. deserialization error).
+        /// </summary>
         public event EventHandler<NetworkConnectionMessageErrorEventArgs> ReceivedError;
+        /// <summary>
+        /// Occurs when endpoint requests access to controller for the first time.
+        /// </summary>
         public event EventHandler<NetworkConnectionControllerResolveEventArgs> ControllerResolve;
 
         private readonly object m_disposeLocker = new object();
@@ -79,7 +124,7 @@ namespace TagBites.Net
         private readonly List<object> m_remoteControllers = new List<object>();
         private readonly Dictionary<string, object> m_controllers = new Dictionary<string, object>();
 
-        private TcpClient TcpClient { get; set; }
+        internal TcpClient TcpClient { get; private set; }
         private Stream Stream { get; set; }
 
         /// <summary>
@@ -108,7 +153,7 @@ namespace TagBites.Net
                     {
                         m_listeningTask = m_listeningTask != null
                             ? m_listeningTask.ContinueWith(t => ListeningTask())
-                            : Task.Run((Action)ListeningTask);
+                            : Task.Run(ListeningTask);
                     }
 
                     m_listening = value;
@@ -201,6 +246,11 @@ namespace TagBites.Net
 
         #region Controllers
 
+        /// <summary>
+        /// Returns the remote controller.
+        /// </summary>
+        /// <typeparam name="T">Type of controller.</typeparam>
+        /// <returns>Remote controller.</returns>
         public T GetController<T>()
         {
             ThrowIfDisposed();
@@ -216,6 +266,23 @@ namespace TagBites.Net
 
                 return (T)controller;
             }
+        }
+        /// <summary>
+        /// Registers new local controller.
+        /// </summary>
+        /// <typeparam name="T">Type of controller.</typeparam>
+        public void Use<T>() where T : new() => Use(new T());
+        /// <summary>
+        /// Registers new local controller.
+        /// </summary>
+        /// <typeparam name="T">Type of controller.</typeparam>
+        public void Use<T>(T controller)
+        {
+            var controllerType = typeof(T);
+            var name = controllerType.FullName + ", " + controllerType.Assembly.GetName().Name;
+
+            lock (m_controllers)
+                m_controllers[name] = controller;
         }
 
         private async void OnTrackMessage(TrackMessage message)
@@ -251,7 +318,7 @@ namespace TagBites.Net
                         if (message.Value is ControllerMethodInvokeResultModel rm)
                         {
                             if (rm.ExceptionCode > 0)
-                                msg.Exception = new RemoteControllerInvokeException((RemoteControllerInvokeExceptionType)rm.ExceptionCode, rm.ExceptionMessage);
+                                msg.Exception = new NetworkControllerInvocationException((NetworkControllerInvocationExceptionType)rm.ExceptionCode, rm.ExceptionMessage);
                             else
                                 msg.Result = rm.Result;
                         }
@@ -274,7 +341,7 @@ namespace TagBites.Net
                     {
                         m_messages.RemoveAt(i);
 
-                        msg.Exception = new RemoteControllerInvokeException(RemoteControllerInvokeExceptionType.DataReceivingError, null, error);
+                        msg.Exception = new NetworkControllerInvocationException(NetworkControllerInvocationExceptionType.DataReceivingError, null, error);
                         msg.Semaphore.Release();
 
                         break;
@@ -325,10 +392,10 @@ namespace TagBites.Net
 
                 if (!m_controllers.TryGetValue(controllerName, out controller))
                 {
-                    var delegates = ControllerResolve?.GetInvocationList();
-                    if (delegates != null)
+                    try
                     {
-                        try
+                        var delegates = ControllerResolve?.GetInvocationList();
+                        if (delegates != null)
                         {
                             // Type
                             Type controllerType = null;
@@ -350,17 +417,17 @@ namespace TagBites.Net
                                 }
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            result.ExceptionMessage = ex.ToString();
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        result.ExceptionMessage = ex.ToString();
                     }
                 }
             }
 
             if (controller == null)
             {
-                result.ExceptionCode = (int)RemoteControllerInvokeExceptionType.ControllerNotFound;
+                result.ExceptionCode = (int)NetworkControllerInvocationExceptionType.ControllerNotFound;
                 return result;
             }
 
@@ -386,7 +453,7 @@ namespace TagBites.Net
 
             if (method == null)
             {
-                result.ExceptionCode = (int)RemoteControllerInvokeExceptionType.MethodNotFound;
+                result.ExceptionCode = (int)NetworkControllerInvocationExceptionType.MethodNotFound;
                 return result;
             }
 
@@ -407,7 +474,7 @@ namespace TagBites.Net
             }
             catch (Exception e)
             {
-                result.ExceptionCode = (int)RemoteControllerInvokeExceptionType.MethodInvokeException;
+                result.ExceptionCode = (int)NetworkControllerInvocationExceptionType.MethodInvokeException;
                 result.ExceptionMessage = e.ToString();
             }
 
@@ -497,7 +564,7 @@ namespace TagBites.Net
                             if (IsDisposed)
                                 throw new NetworkConnectionBreakException(null);
 
-                            var ex = new ObjectProtocolViolationException(e);
+                            var ex = new NetworkObjectProtocolViolationException(e);
                             Dispose(ex);
                             throw ex;
                         }
@@ -561,7 +628,7 @@ namespace TagBites.Net
                         if (IsDisposed)
                             throw new NetworkConnectionBreakException(null);
 
-                        var ex = new ObjectProtocolViolationException(e);
+                        var ex = new NetworkObjectProtocolViolationException(e);
                         Dispose(ex);
                         throw ex;
                     }
@@ -859,7 +926,7 @@ namespace TagBites.Net
         #region IDisposable
 
         /// <summary>
-        /// Closes the connection.
+        /// Closes the connection. It waits for the end of the data transfer.
         /// </summary>
         public void Close()
         {
@@ -871,7 +938,9 @@ namespace TagBites.Net
                 if (!IsDisposed)
                     Dispose(null);
         }
-        /// <inheritdoc />
+        /// <summary>
+        /// Disposes the object without waiting for the end of the data transfer.
+        /// </summary>
         public void Dispose()
         {
             lock (m_disposeLocker)
@@ -922,7 +991,7 @@ namespace TagBites.Net
                 {
                     foreach (var message in m_messages)
                     {
-                        message.Exception = new RemoteControllerInvokeException(RemoteControllerInvokeExceptionType.OperationCancelled, null);
+                        message.Exception = new NetworkControllerInvocationException(NetworkControllerInvocationExceptionType.OperationCancelled, null);
                         message.Semaphore.Release();
                     }
 

@@ -7,13 +7,18 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace TagBites.Net
 {
+    /// <summary>
+    /// Provides data for the <see cref="Server"/> events.
+    /// </summary>
     public class ServerClientEventArgs : EventArgs
     {
+        /// <summary>
+        /// Gets client for whom the event was called.
+        /// </summary>
         public ServerClient Client { get; }
 
         internal ServerClientEventArgs(ServerClient client)
@@ -21,8 +26,15 @@ namespace TagBites.Net
             Client = client;
         }
     }
+
+    /// <summary>
+    /// Provides data for the <see cref="E:TagBites.Net.Server.ClientConnectingError"/> event.
+    /// </summary>
     public class ServerClientConnectExceptionEventArgs : EventArgs
     {
+        /// <summary>
+        /// Gets a exception.
+        /// </summary>
         public Exception Exception { get; }
 
         internal ServerClientConnectExceptionEventArgs(Exception exception)
@@ -30,10 +42,23 @@ namespace TagBites.Net
             Exception = exception;
         }
     }
+
+    /// <summary>
+    /// Provides data for the <see cref="E:TagBites.Net.Server.ClientAuthenticate"/> event.
+    /// </summary>
     public class ServerClientAuthenticateEventArgs : EventArgs
     {
+        /// <summary>
+        /// Gets client credentials.
+        /// </summary>
         public ClientCredentials Credentials { get; }
+        /// <summary>
+        /// Gets or sets value indicating whether authentication procedure has been successful.
+        /// </summary>
         public bool Authenticated { get; set; }
+        /// <summary>
+        /// Gets or sets client identity. It could be assign based on credentials.
+        /// </summary>
         public object Identity { get; set; }
 
         internal ServerClientAuthenticateEventArgs(ClientCredentials credentials)
@@ -41,10 +66,57 @@ namespace TagBites.Net
             Credentials = credentials;
         }
     }
+
+    /// <summary>
+    /// Provides data for the <see cref="E:TagBites.Net.Server.Received"/> event.
+    /// </summary>
+    public class ServerClientMessageEventArgs : ServerClientEventArgs
+    {
+        /// <summary>
+        /// Gets a message.
+        /// </summary>
+        public object Message { get; }
+
+        internal ServerClientMessageEventArgs(ServerClient client, object message)
+            : base(client)
+        {
+            Message = message;
+        }
+    }
+
+    /// <summary>
+    /// Provides data for the <see cref="E:TagBites.Net.Server.ReceivedError"/> event.
+    /// </summary>
+    public class ServerClientMessageErrorEventArgs : ServerClientEventArgs
+    {
+        /// <summary>
+        /// Gets a exception.
+        /// </summary>
+        public Exception Exception { get; }
+
+        internal ServerClientMessageErrorEventArgs(ServerClient client, Exception exception)
+            : base(client)
+        {
+            Exception = exception;
+        }
+    }
+
+    /// <summary>
+    /// Provides data for the <see cref="E:TagBites.Net.Server.ControllerResolve"/> event.
+    /// </summary>
     public class ServerClientControllerResolveEventArgs : ServerClientEventArgs
     {
+        /// <summary>
+        /// Full name of controller to resolve.
+        /// </summary>
         public string ControllerTypeName { get; }
+        /// <summary>
+        /// Type of controller to resolve.
+        /// </summary>
         public Type ControllerType { get; }
+        /// <summary>
+        /// Gets or sets resolved controller.
+        /// </summary>
         public object Controller { get; set; }
 
         internal ServerClientControllerResolveEventArgs(ServerClient client, string controllerTypeName, Type controllerType)
@@ -61,10 +133,34 @@ namespace TagBites.Net
     /// </summary>
     public class Server : IDisposable
     {
+        /// <summary>
+        /// Occurs right after tcp connection has been established, but before <see cref="ClientConnected"/> event.
+        /// It allows to authenticate client and assign identity.
+        /// </summary>
         public event EventHandler<ServerClientAuthenticateEventArgs> ClientAuthenticate;
+        /// <summary>
+        /// Occurs when an exception is thrown while accepting tcp client, or during authentication procedure, or during <see cref="ClientConnected"/> event. 
+        /// </summary>
         public event EventHandler<ServerClientConnectExceptionEventArgs> ClientConnectingError;
+        /// <summary>
+        /// Occurs after the connection is established and client is successfully authenticated.
+        /// </summary>
         public event EventHandler<ServerClientEventArgs> ClientConnected;
+        /// <summary>
+        /// Occurs when client disconnects form the server.
+        /// </summary>
         public event EventHandler<ServerClientEventArgs> ClientDisconnected;
+        /// <summary>
+        /// Occurs when client sends a message.
+        /// </summary>
+        public event EventHandler<ServerClientMessageEventArgs> Received;
+        /// <summary>
+        /// Occurs when server was unable to receive client message (eg. deserialization error).
+        /// </summary>
+        public event EventHandler<ServerClientMessageErrorEventArgs> ReceivedError;
+        /// <summary>
+        /// Occurs when client requests access to controller for the first time.
+        /// </summary>
         public event EventHandler<ServerClientControllerResolveEventArgs> ControllerResolve;
 
         private readonly X509Certificate m_sslCertificate;
@@ -72,6 +168,7 @@ namespace TagBites.Net
         private bool m_listening;
         private Task m_listeningTask;
         private readonly List<ServerClient> m_clients = new List<ServerClient>();
+        private readonly Dictionary<string, Type> m_controllers = new Dictionary<string, Type>();
 
         /// <summary>
         /// Gets or sets a value indicating whether to dispose connected clients when server is disposing.
@@ -101,7 +198,7 @@ namespace TagBites.Net
                     {
                         m_listeningTask = m_listeningTask != null
                             ? m_listeningTask.ContinueWith(t => ListeningTask())
-                            : Task.Run((Action)ListeningTask);
+                            : Task.Run(ListeningTask);
                     }
                     else
                     {
@@ -161,6 +258,19 @@ namespace TagBites.Net
 
 
         /// <summary>
+        /// Register new local controller.
+        /// </summary>
+        /// <typeparam name="T">Type of controller.</typeparam>
+        public void Use<T>() where T : new()
+        {
+            var controllerType = typeof(T);
+            var name = controllerType.FullName + ", " + controllerType.Assembly.GetName().Name;
+
+            lock (m_controllers)
+                m_controllers[name] = typeof(T);
+        }
+
+        /// <summary>
         /// Returns connected clients.
         /// </summary>
         public ServerClient[] GetClients()
@@ -171,8 +281,7 @@ namespace TagBites.Net
         /// <summary>
         /// Returns connected client with the given <paramref name="identity"/>.
         /// </summary>
-        /// <param name="identity"></param>
-        /// <returns></returns>
+        /// <param name="identity">Client identity.</param>
         public ServerClient GetClient(object identity)
         {
             if (identity == null)
@@ -180,6 +289,40 @@ namespace TagBites.Net
 
             lock (m_clients)
                 return m_clients.FirstOrDefault(x => x.Identity != null && x.Identity.Equals(identity));
+        }
+
+        /// <summary>
+        /// Sends message to all clients.
+        /// </summary>
+        /// <param name="message">Message to send.</param>
+        public Task SendToAllAsync(object message) => SendToAllAsync(message, null);
+        /// <summary>
+        /// Sends message to all clients except given one (<paramref name="exceptClient"/>).
+        /// </summary>
+        /// <param name="message">Message to send.</param>
+        /// <param name="exceptClient">Client to whom do not send message.</param>
+        public async Task SendToAllAsync(object message, ServerClient exceptClient)
+        {
+            ThrowIfDisposed();
+
+            List<Exception> ex = null;
+
+            foreach (var client in GetClients())
+                if (client.Server == this && client != exceptClient)
+                    try
+                    {
+                        await client.SendAsync(message);
+                    }
+                    catch (Exception e) when (!(e is NetworkConnectionBreakException) && !(e is ObjectDisposedException))
+                    {
+                        if (ex == null)
+                            ex = new List<Exception>();
+
+                        ex.Add(e);
+                    }
+
+            if (ex != null)
+                throw new AggregateException("Error occured while sending message to all clients.", ex);
         }
 
         private async void ListeningTask()
@@ -271,8 +414,6 @@ namespace TagBites.Net
 
                 // Create
                 var client = new ServerClient(this, identity, connection);
-                client.ControllerResolve += Client_ControllerResolve;
-                client.Disconnected += Client_Disconnected;
 
                 ClientConnected?.Invoke(this, new ServerClientEventArgs(client));
 
@@ -305,12 +446,62 @@ namespace TagBites.Net
             }
         }
 
-        private void Client_ControllerResolve(object sender, NetworkConnectionControllerResolveEventArgs e)
+        /// <summary>
+        /// Removes client form the client list and invokes <see cref="ClientDisconnected"/> event.
+        /// </summary>
+        /// <param name="client">Client which raised the event.</param>
+        /// <param name="e">Client event argument.</param>
+        protected internal virtual void OnClientDisconnected(ServerClient client, NetworkConnectionClosedEventArgs e)
         {
+            try
+            {
+                lock (m_clients)
+                    m_clients.Remove(client);
+
+                if (!IsDisposed)
+                    ClientDisconnected?.Invoke(this, new ServerClientEventArgs(client));
+            }
+            finally
+            {
+                client.Dispose();
+            }
+        }
+        /// <summary>
+        /// Invokes <see cref="Received"/> event.
+        /// </summary>
+        /// <param name="client">Client which raised the event.</param>
+        /// <param name="e">Client event argument.</param>
+        protected internal virtual void OnClientReceived(ServerClient client, NetworkConnectionMessageEventArgs e)
+        {
+            Received?.Invoke(this, new ServerClientMessageEventArgs(client, e.Message));
+        }
+        /// <summary>
+        /// Invokes <see cref="ReceivedError"/> event.
+        /// </summary>
+        /// <param name="client">Client which raised the event.</param>
+        /// <param name="e">Client event argument.</param>
+        protected internal virtual void OnClientReceivedError(ServerClient client, NetworkConnectionMessageErrorEventArgs e)
+        {
+            ReceivedError?.Invoke(this, new ServerClientMessageErrorEventArgs(client, e.Exception));
+        }
+        /// <summary>
+        /// Invokes <see cref="ControllerResolve"/> event.
+        /// </summary>
+        /// <param name="client">Client which raised the event.</param>
+        /// <param name="e">Client event argument.</param>
+        protected internal virtual void OnClientControllerResolve(ServerClient client, NetworkConnectionControllerResolveEventArgs e)
+        {
+            lock (m_controllers)
+                if (m_controllers.TryGetValue(e.ControllerTypeName, out var type))
+                {
+                    e.Controller = Activator.CreateInstance(type);
+                    return;
+                }
+
             var delegates = ControllerResolve?.GetInvocationList();
             if (delegates != null)
             {
-                var e2 = new ServerClientControllerResolveEventArgs((ServerClient)sender, e.ControllerTypeName, e.ControllerType);
+                var e2 = new ServerClientControllerResolveEventArgs(client, e.ControllerTypeName, e.ControllerType);
                 foreach (var del in delegates)
                 {
                     ((EventHandler<ServerClientControllerResolveEventArgs>)del)(this, e2);
@@ -320,22 +511,6 @@ namespace TagBites.Net
                         break;
                     }
                 }
-            }
-        }
-        private void Client_Disconnected(object sender, NetworkConnectionClosedEventArgs e)
-        {
-            var client = (ServerClient)sender;
-            try
-            {
-                lock (m_clients)
-                    m_clients.Remove((ServerClient)sender);
-
-                if (!IsDisposed)
-                    ClientDisconnected?.Invoke(this, new ServerClientEventArgs(client));
-            }
-            finally
-            {
-                client.Dispose();
             }
         }
 
@@ -368,7 +543,6 @@ namespace TagBites.Net
                     {
                         foreach (var client in m_clients)
                         {
-                            client.Disconnected -= Client_Disconnected;
                             client.Server = null;
 
                             if (DisconnectClientsOnDispose)

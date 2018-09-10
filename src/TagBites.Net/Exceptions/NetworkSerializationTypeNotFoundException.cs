@@ -5,6 +5,9 @@ using System.Text;
 
 namespace TagBites.Net
 {
+    /// <summary>
+    /// The exception that is thrown when serialized type is not found.
+    /// </summary>
     public class NetworkSerializationTypeNotFoundException : NetworkSerializationException
     {
         internal NetworkSerializationTypeNotFoundException(string typeName, int inResponseToId)

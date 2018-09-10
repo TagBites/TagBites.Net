@@ -5,6 +5,9 @@ using System.Text;
 
 namespace TagBites.Net
 {
+    /// <summary>
+    /// The exception that is thrown when error occured while establishing connection.
+    /// </summary>
     public class NetworkConnectionOpenException : Exception
     {
         internal NetworkConnectionOpenException()

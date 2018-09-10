@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Net;
 
 namespace TagBites.Net
 {
@@ -21,11 +18,59 @@ namespace TagBites.Net
         /// </summary>
         public Server Server { get; internal set; }
 
+        /// <summary>
+        /// Gets the remote endpoint.
+        /// </summary>
+        /// <returns>The <see cref="T:System.Net.EndPoint" /> with which the <see cref="T:System.Net.Sockets.Socket" /> is communicating.</returns>
+        public EndPoint RemoteEndPoint { get; }
+
         internal ServerClient(Server server, object identity, NetworkConnection connection)
         {
             Identity = identity;
             Server = server;
             Connection = connection;
+            RemoteEndPoint = connection.TcpClient.Client.RemoteEndPoint;
+        }
+
+
+        /// <summary>
+        /// Registers new local controller.
+        /// </summary>
+        /// <typeparam name="T">Type of controller.</typeparam>
+        public void Use<T>() where T : new()
+        {
+            Connection.Use<T>();
+        }
+
+        /// <inheritdoc />
+        protected override void OnConnectionClosed(object sender, NetworkConnectionClosedEventArgs e)
+        {
+            base.OnConnectionClosed(sender, e);
+            Server?.OnClientDisconnected(this, e);
+        }
+        /// <inheritdoc />
+        protected override void OnReceived(object sender, NetworkConnectionMessageEventArgs e)
+        {
+            base.OnReceived(sender, e);
+            Server?.OnClientReceived(this, e);
+        }
+        /// <inheritdoc />
+        protected override void OnReceivedError(object sender, NetworkConnectionMessageErrorEventArgs e)
+        {
+            base.OnReceivedError(sender, e);
+            Server?.OnClientReceivedError(this, e);
+        }
+        /// <inheritdoc />
+        protected override void OnControllerResolve(object sender, NetworkConnectionControllerResolveEventArgs e)
+        {
+            base.OnControllerResolve(sender, e);
+            Server?.OnClientControllerResolve(this, e);
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return Identity?.ToString() ?? RemoteEndPoint.ToString();
         }
     }
 }
