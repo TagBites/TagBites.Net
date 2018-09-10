@@ -267,18 +267,28 @@ namespace TagBites.Net
                 return (T)controller;
             }
         }
+
         /// <summary>
-        /// Registers new local controller.
+        /// Register local controller.
         /// </summary>
-        /// <typeparam name="T">Type of controller.</typeparam>
-        public void Use<T>() where T : new() => Use(new T());
-        /// <summary>
-        /// Registers new local controller.
-        /// </summary>
-        /// <typeparam name="T">Type of controller.</typeparam>
-        public void Use<T>(T controller)
+        /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
+        /// <typeparam name="TController">Controller type.</typeparam>
+        public void Use<TControllerInterface, TController>() where TController : TControllerInterface, new()
         {
-            var controllerType = typeof(T);
+            Use<TControllerInterface, TController>(new TController());
+        }
+        /// <summary>
+        /// Register local controller.
+        /// </summary>
+        /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
+        /// <typeparam name="TController">Controller type.</typeparam>
+        /// <param name="controller">Controller instance.</param>
+        public void Use<TControllerInterface, TController>(TController controller) where TController : TControllerInterface
+        {
+            if (controller == null)
+                throw new ArgumentNullException(nameof(controller));
+
+            var controllerType = typeof(TControllerInterface);
             var name = controllerType.FullName + ", " + controllerType.Assembly.GetName().Name;
 
             lock (m_controllers)

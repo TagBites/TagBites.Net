@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 
 namespace TagBites.Net
 {
@@ -34,12 +35,23 @@ namespace TagBites.Net
 
 
         /// <summary>
-        /// Registers new local controller.
+        /// Register local controller.
         /// </summary>
-        /// <typeparam name="T">Type of controller.</typeparam>
-        public void Use<T>() where T : new()
+        /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
+        /// <typeparam name="TController">Controller type.</typeparam>
+        public void Use<TControllerInterface, TController>() where TController : TControllerInterface, new()
         {
-            Connection.Use<T>();
+            Connection.Use<TControllerInterface, TController>();
+        }
+        /// <summary>
+        /// Register local controller.
+        /// </summary>
+        /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
+        /// <typeparam name="TController">Controller type.</typeparam>
+        /// <param name="controller">Controller instance.</param>
+        public void Use<TControllerInterface, TController>(TController controller) where TController : TControllerInterface
+        {
+            Connection.Use<TControllerInterface, TController>(controller);
         }
 
         /// <inheritdoc />

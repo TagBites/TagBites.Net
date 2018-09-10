@@ -23,7 +23,7 @@ namespace TagBites.Net
         public event EventHandler Connected;
 
         private readonly ClientCredentials m_credentials;
-        private readonly Dictionary<string, Type> m_controllers = new Dictionary<string, Type>();
+        private readonly Dictionary<string, object> m_controllers = new Dictionary<string, object>();
 
         /// <summary>
         /// Gets the remote endpoint.
@@ -74,16 +74,34 @@ namespace TagBites.Net
 
 
         /// <summary>
-        /// Register new local controller.
+        /// Register local controller.
         /// </summary>
-        /// <typeparam name="T">Type of controller.</typeparam>
-        public void Use<T>() where T : new()
+        /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
+        /// <typeparam name="TController">Controller type.</typeparam>
+        public void Use<TControllerInterface, TController>() where TController : TControllerInterface, new()
         {
-            var controllerType = typeof(T);
+            var controllerType = typeof(TControllerInterface);
             var name = controllerType.FullName + ", " + controllerType.Assembly.GetName().Name;
 
             lock (m_controllers)
-                m_controllers[name] = typeof(T);
+                m_controllers[name] = typeof(TController);
+        }
+        /// <summary>
+        /// Register local controller.
+        /// </summary>
+        /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
+        /// <typeparam name="TController">Controller type.</typeparam>
+        /// <param name="controller">Controller instance.</param>
+        public void Use<TControllerInterface, TController>(TController controller) where TController : TControllerInterface
+        {
+            if (controller == null)
+                throw new ArgumentNullException(nameof(controller));
+
+            var controllerType = typeof(TControllerInterface);
+            var name = controllerType.FullName + ", " + controllerType.Assembly.GetName().Name;
+
+            lock (m_controllers)
+                m_controllers[name] = controller;
         }
 
         /// <summary>
@@ -118,7 +136,7 @@ namespace TagBites.Net
             {
                 try
                 {
-                    client = new TcpClient((IPEndPoint)RemoteEndPoint);
+                    client = new TcpClient(((IPEndPoint)RemoteEndPoint).Address.ToString(), ((IPEndPoint)RemoteEndPoint).Port);
 
                     if (useSsl)
                     {
@@ -205,9 +223,11 @@ namespace TagBites.Net
         protected override void OnControllerResolve(object sender, NetworkConnectionControllerResolveEventArgs e)
         {
             lock (m_controllers)
-                if (m_controllers.TryGetValue(e.ControllerTypeName, out var type))
+                if (m_controllers.TryGetValue(e.ControllerTypeName, out var controller))
                 {
-                    e.Controller = Activator.CreateInstance(type);
+                    e.Controller = controller is Type type
+                        ? Activator.CreateInstance(type)
+                        : controller;
                     return;
                 }
 

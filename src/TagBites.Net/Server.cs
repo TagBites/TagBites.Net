@@ -168,7 +168,7 @@ namespace TagBites.Net
         private bool m_listening;
         private Task m_listeningTask;
         private readonly List<ServerClient> m_clients = new List<ServerClient>();
-        private readonly Dictionary<string, Type> m_controllers = new Dictionary<string, Type>();
+        private readonly Dictionary<string, object> m_controllers = new Dictionary<string, object>();
 
         /// <summary>
         /// Gets or sets a value indicating whether to dispose connected clients when server is disposing.
@@ -258,16 +258,34 @@ namespace TagBites.Net
 
 
         /// <summary>
-        /// Register new local controller.
+        /// Register local controller.
         /// </summary>
-        /// <typeparam name="T">Type of controller.</typeparam>
-        public void Use<T>() where T : new()
+        /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
+        /// <typeparam name="TController">Controller type.</typeparam>
+        public void Use<TControllerInterface, TController>() where TController : TControllerInterface, new()
         {
-            var controllerType = typeof(T);
+            var controllerType = typeof(TControllerInterface);
             var name = controllerType.FullName + ", " + controllerType.Assembly.GetName().Name;
 
             lock (m_controllers)
-                m_controllers[name] = typeof(T);
+                m_controllers[name] = typeof(TController);
+        }
+        /// <summary>
+        /// Register local controller.
+        /// </summary>
+        /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
+        /// <typeparam name="TController">Controller type.</typeparam>
+        /// <param name="controllerProvider">Controller instance.</param>
+        public void Use<TControllerInterface, TController>(Func<ServerClient, TController> controllerProvider) where TController : TControllerInterface
+        {
+            if (controllerProvider == null)
+                throw new ArgumentNullException(nameof(controllerProvider));
+
+            var controllerType = typeof(TControllerInterface);
+            var name = controllerType.FullName + ", " + controllerType.Assembly.GetName().Name;
+
+            lock (m_controllers)
+                m_controllers[name] = (Func<ServerClient, object>)(x => controllerProvider(x));
         }
 
         /// <summary>
@@ -492,9 +510,11 @@ namespace TagBites.Net
         protected internal virtual void OnClientControllerResolve(ServerClient client, NetworkConnectionControllerResolveEventArgs e)
         {
             lock (m_controllers)
-                if (m_controllers.TryGetValue(e.ControllerTypeName, out var type))
+                if (m_controllers.TryGetValue(e.ControllerTypeName, out var controller))
                 {
-                    e.Controller = Activator.CreateInstance(type);
+                    e.Controller = controller is Func<ServerClient, object> provider
+                        ? provider(client)
+                        : Activator.CreateInstance((Type)controller);
                     return;
                 }
 
