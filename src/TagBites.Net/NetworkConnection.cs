@@ -473,7 +473,7 @@ namespace TagBites.Net
                 var value = method.Invoke(controller, invokeModel.Parameters);
                 if (value is Task t)
                 {
-                    await Task.WhenAll(t);
+                    await Task.WhenAll(t).ConfigureAwait(false);
                     value = t.GetType().GetProperty("Result")?.GetValue(t);
 
                     if (value?.GetType().FullName == "System.Threading.Tasks.VoidTaskResult")
@@ -553,6 +553,24 @@ namespace TagBites.Net
                             Task.Run(() => OnTrackMessageResponseError(e.InResponseToId, e), m_token);
 #pragma warning restore 4014
                             continue;
+                        }
+                        else if (e.MessageId != 0)
+                        {
+#pragma warning disable 4014
+                            Task.Run(async () =>
+                            {
+                                var trackMessage = new TrackMessage()
+                                {
+                                    InResponseToId = e.MessageId,
+                                    Value = new ControllerMethodInvokeResultModel()
+                                    {
+                                        ExceptionCode = (int)NetworkControllerInvocationExceptionType.DataReceivingError,
+                                        ExceptionMessage = e.Message
+                                    }
+                                };
+                                await WriteAsync(trackMessage);
+                            }, m_token);
+#pragma warning restore 4014
                         }
 
                         throw;
@@ -721,7 +739,7 @@ namespace TagBites.Net
                             }
                             catch (Exception ex)
                             {
-                                throw new NetworkSerializationException(valueType.AssemblyQualifiedName, ex, inResponseToId);
+                                throw new NetworkSerializationException(valueType.AssemblyQualifiedName, ex, 0, inResponseToId);
                             }
                         }
                         break;
@@ -756,7 +774,7 @@ namespace TagBites.Net
 
             if (typeCode == TypeCode.Empty || typeCode == TypeCode.DBNull)
             {
-                return messageId == 0
+                return messageId == 0 && inResponseToId == 0
                     ? null
                     : new TrackMessage() { MessageId = messageId, InResponseToId = inResponseToId };
             }
@@ -824,7 +842,7 @@ namespace TagBites.Net
                 case TypeCode.Object:
                     {
                         if (valueType == null)
-                            throw new NetworkSerializationTypeNotFoundException(typeName, inResponseToId);
+                            throw new NetworkSerializationTypeNotFoundException(typeName, messageId, inResponseToId);
 
                         try
                         {
@@ -838,7 +856,7 @@ namespace TagBites.Net
                         }
                         catch (Exception e)
                         {
-                            throw new NetworkSerializationException(typeName, e, inResponseToId);
+                            throw new NetworkSerializationException(typeName, e, messageId, inResponseToId);
                         }
                     }
                     break;
@@ -849,7 +867,7 @@ namespace TagBites.Net
                     break;
             }
 
-            return messageId == 0
+            return messageId == 0 && inResponseToId == 0
                 ? value
                 : new TrackMessage() { MessageId = messageId, InResponseToId = inResponseToId, Value = value };
         }
@@ -1085,10 +1103,11 @@ namespace TagBites.Net
             }
             protected object Invoke(MethodInfo targetMethod, object[] args)
             {
-                var task = m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
                 if (targetMethod.ReturnType.IsInstanceOfType(typeof(Task)))
-                    return task;
-
+                    return m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
+        
+                var task = m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
+                task.Wait();
                 return task.Result;
             }
 
@@ -1107,11 +1126,24 @@ namespace TagBites.Net
 
             protected override object Invoke(MethodInfo targetMethod, object[] args)
             {
-                var task = m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
                 if (targetMethod.ReturnType.IsInstanceOfType(typeof(Task)))
-                    return task;
+                    return m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
 
+                var task = m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
+                task.Wait();
                 return task.Result;
+                //var sc = SynchronizationContext.Current;
+                //SynchronizationContext.SetSynchronizationContext(null);
+                //try
+                //{
+                //    var task = m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
+                //    task.Wait();
+                //    return task.Result;
+                //}
+                //finally
+                //{
+                //    SynchronizationContext.SetSynchronizationContext(sc);
+                //}
             }
 
             public static T Create<T>(NetworkConnection connection)

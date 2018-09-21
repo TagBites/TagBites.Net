@@ -19,14 +19,16 @@ namespace TagBites.Net
         /// </summary>
         public string TypeName { get; }
 
+        internal int MessageId { get; }
         internal int InResponseToId { get; }
 
-        internal NetworkSerializationException(string typeName, Exception serializationException, int inResponseToId)
+        internal NetworkSerializationException(string typeName, Exception serializationException, int messageId, int inResponseToId)
             : base("Serialize/Deserialize exception.")
         {
             TypeName = typeName;
             SerializationException = serializationException;
 
+            MessageId = messageId;
             InResponseToId = inResponseToId;
         }
     }

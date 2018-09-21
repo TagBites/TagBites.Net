@@ -10,8 +10,8 @@ namespace TagBites.Net
     /// </summary>
     public class NetworkSerializationTypeNotFoundException : NetworkSerializationException
     {
-        internal NetworkSerializationTypeNotFoundException(string typeName, int inResponseToId)
-            : base(typeName, null, inResponseToId)
+        internal NetworkSerializationTypeNotFoundException(string typeName, int messageId, int inResponseToId)
+            : base(typeName, null, messageId, inResponseToId)
         { }
     }
 }
