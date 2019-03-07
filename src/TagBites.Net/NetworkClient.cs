@@ -13,19 +13,19 @@ namespace TagBites.Net
     public abstract class NetworkClient : IDisposable
     {
         /// <summary>
-        /// 
+        /// Occurs when client disconnects form the server.
         /// </summary>
         public event EventHandler<NetworkConnectionClosedEventArgs> Disconnected;
         /// <summary>
-        /// 
+        ///  Occurs when server sends a message.
         /// </summary>
         public event EventHandler<NetworkConnectionMessageEventArgs> Received;
         /// <summary>
-        /// 
+        /// Occurs when client was unable to receive server message (eg. deserialization error).
         /// </summary>
         public event EventHandler<NetworkConnectionMessageErrorEventArgs> ReceivedError;
         /// <summary>
-        /// 
+        /// Occurs when server requests access to controller for the first time. It allows to create and return controller instance without register it first.
         /// </summary>
         public event EventHandler<NetworkConnectionControllerResolveEventArgs> ControllerResolve;
 
