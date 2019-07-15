@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyVersion>1.0.0</AssemblyVersion>
     <VersionPrefix>1.0.0</VersionPrefix>
-    <VersionSuffix>beta3</VersionSuffix>
-    <InformationalVersion>1.0.0-beta3 2018-09-21</InformationalVersion>
+    <VersionSuffix>beta4</VersionSuffix>
+    <InformationalVersion>1.0.0-beta4 2019-07-15</InformationalVersion>
   </PropertyGroup>
 </Project>

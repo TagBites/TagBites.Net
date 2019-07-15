@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TagBites.Net.Licensing;
+using LicenseManager = TagBites.Net.Licensing.LicenseManager;
 
 namespace TagBites.Net
 {
@@ -86,6 +88,7 @@ namespace TagBites.Net
         }
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     /// <summary>
     /// TCP connection which allows to send objects messages and execute remote methods.
     /// </summary>
@@ -123,6 +126,7 @@ namespace TagBites.Net
         private readonly List<ControllerMethodInvokeState> m_messages = new List<ControllerMethodInvokeState>();
         private readonly List<object> m_remoteControllers = new List<object>();
         private readonly Dictionary<string, object> m_controllers = new Dictionary<string, object>();
+        private readonly NetworkConfig _config;
 
         internal TcpClient TcpClient { get; private set; }
         private Stream Stream { get; set; }
@@ -161,46 +165,20 @@ namespace TagBites.Net
             }
         }
 
-        /// <summary>
-        /// Gets or sets encoding used to encode/decode socket messages.
-        /// </summary>
-        public Encoding Encoding
-        {
-            get => _encoding ?? (_encoding = Encoding.Default);
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-                _encoding = value;
-            }
-        }
-        /// <summary>
-        /// Gets or sets serializer used to serialize/deserialize object send through socket.
-        /// </summary>
-        public INetworkSerializer Serializer
-        {
-            get => _serializer ?? (_serializer = new BinaryNetworkSerializer());
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                _serializer = value;
-            }
-        }
-
-        internal NetworkConnection(TcpClient tcpClient, NetworkStream networkStream)
-            : this(tcpClient, (Stream)networkStream)
+        internal NetworkConnection(NetworkConfig config, TcpClient tcpClient, NetworkStream networkStream)
+            : this(config, tcpClient, (Stream)networkStream)
         { }
-        internal NetworkConnection(TcpClient tcpClient, SslStream sslStream)
-            : this(tcpClient, (Stream)sslStream)
+        internal NetworkConnection(NetworkConfig config, TcpClient tcpClient, SslStream sslStream)
+            : this(config, tcpClient, (Stream)sslStream)
         { }
-        private NetworkConnection(TcpClient tcpClient, Stream stream)
+        private NetworkConnection(NetworkConfig config, TcpClient tcpClient, Stream stream)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
+            if (config == null)
+                throw new ArgumentNullException(nameof(config));
             if (tcpClient == null)
                 throw new ArgumentNullException(nameof(tcpClient));
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
 
             if (!tcpClient.Connected)
                 throw new ArgumentException("TcpClient is not connected.", nameof(tcpClient));
@@ -209,6 +187,7 @@ namespace TagBites.Net
             tcpClient.ReceiveTimeout = Timeout.Infinite;
             tcpClient.SendTimeout = Timeout.Infinite;
             Stream = stream;
+            _config = config;
 
             m_tokenSource = new CancellationTokenSource();
             m_token = m_tokenSource.Token;
@@ -488,9 +467,6 @@ namespace TagBites.Net
                 result.ExceptionMessage = e.ToString();
             }
 
-            if (result.Result == null)
-                return null;
-
             return result;
         }
 
@@ -698,7 +674,7 @@ namespace TagBites.Net
             if (typeCode != TypeCode.Empty && typeCode != TypeCode.DBNull)
             {
                 // Encoding
-                var encoding = Encoding;
+                var encoding = _config.Encoding;
                 listBuffer.AddRange(BitConverter.GetBytes(encoding.CodePage));
 
                 // Value
@@ -732,7 +708,7 @@ namespace TagBites.Net
                                 {
                                     using (var ms = new MemoryStream())
                                     {
-                                        Serializer.Serialize(ms, value);
+                                        _config.Serializer.Serialize(ms, value);
                                         content = ms.ToArray();
                                     }
                                 }
@@ -783,7 +759,7 @@ namespace TagBites.Net
             await ReadAsync(buffer, 4).ConfigureAwait(false);
             var encodingCodePage = BitConverter.ToInt32(buffer, 0);
 
-            var encoding = Encoding;
+            var encoding = _config.Encoding;
             if (encoding.CodePage != encodingCodePage)
                 encoding = Encoding.GetEncoding(encodingCodePage);
 
@@ -851,7 +827,10 @@ namespace TagBites.Net
                             else
                             {
                                 using (var ms = new MemoryStream(content))
-                                    value = Serializer.Deserialize(ms, valueType);
+                                    value = _config.Serializer.Deserialize(ms, valueType);
+
+                                if (value != null && !valueType.IsInstanceOfType(value))
+                                    throw new SerializationException($"{_config.Serializer.GetType().Name}.Deserialize for type {valueType.Name} returns value of type {value.GetType().Name}.");
                             }
                         }
                         catch (Exception e)
@@ -1103,7 +1082,7 @@ namespace TagBites.Net
             }
             protected object Invoke(MethodInfo targetMethod, object[] args)
             {
-                if (targetMethod.ReturnType.IsInstanceOfType(typeof(Task)))
+                if (typeof(Task).IsAssignableFrom(targetMethod.ReturnType))
                     return m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
         
                 var task = m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
@@ -1118,7 +1097,7 @@ namespace TagBites.Net
             }
         }
 #else
-        private class ControllerProxy : DispatchProxy
+        public class ControllerProxy : DispatchProxy
         {
             private NetworkConnection m_connection;
             private Type m_controllerType;
@@ -1126,24 +1105,12 @@ namespace TagBites.Net
 
             protected override object Invoke(MethodInfo targetMethod, object[] args)
             {
-                if (targetMethod.ReturnType.IsInstanceOfType(typeof(Task)))
+                if (typeof(Task).IsAssignableFrom(targetMethod.ReturnType))
                     return m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
 
                 var task = m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
                 task.Wait();
                 return task.Result;
-                //var sc = SynchronizationContext.Current;
-                //SynchronizationContext.SetSynchronizationContext(null);
-                //try
-                //{
-                //    var task = m_connection.ControllerMethodInvoke(m_controllerType, targetMethod, args);
-                //    task.Wait();
-                //    return task.Result;
-                //}
-                //finally
-                //{
-                //    SynchronizationContext.SetSynchronizationContext(sc);
-                //}
             }
 
             public static T Create<T>(NetworkConnection connection)

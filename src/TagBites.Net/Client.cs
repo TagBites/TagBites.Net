@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace TagBites.Net
@@ -23,6 +21,7 @@ namespace TagBites.Net
         public event EventHandler Connected;
 
         private readonly ClientCredentials m_credentials;
+        private readonly NetworkConfig _config;
         private readonly Dictionary<string, object> m_controllers = new Dictionary<string, object>();
 
         /// <summary>
@@ -36,7 +35,16 @@ namespace TagBites.Net
         /// <param name="host">Address on which server is listening for clients.</param>
         /// <param name="port">Port on which server is listening for clients.</param>
         public Client(string host, int port)
-            : this(host, port, null)
+            : this(host, port, null, null)
+        { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Client"/> class.
+        /// </summary>
+        /// <param name="host">Address on which server is listening for clients.</param>
+        /// <param name="port">Port on which server is listening for clients.</param>
+        /// <param name="config">Network configuration.</param>
+        public Client(string host, int port, NetworkConfig config)
+            : this(host, port, null, config)
         { }
         /// <summary>
         /// Initializes a new instance of the <see cref="Client"/> class.
@@ -45,6 +53,16 @@ namespace TagBites.Net
         /// <param name="port">Port on which server is listening for clients.</param>
         /// <param name="credentials">Client credentials used for authentication.</param>
         public Client(string host, int port, ClientCredentials credentials)
+            : this(host, port, credentials, null)
+        { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Client"/> class.
+        /// </summary>
+        /// <param name="host">Address on which server is listening for clients.</param>
+        /// <param name="port">Port on which server is listening for clients.</param>
+        /// <param name="credentials">Client credentials used for authentication.</param>
+        /// <param name="config">Network configuration.</param>
+        public Client(string host, int port, ClientCredentials credentials, NetworkConfig config)
         {
             if (host == null)
                 throw new ArgumentNullException(nameof(host));
@@ -53,13 +71,22 @@ namespace TagBites.Net
 
             RemoteEndPoint = new IPEndPoint(IPAddress.Parse(host), port);
             m_credentials = credentials;
+            _config = config ?? NetworkConfig.Default;
         }
         /// <summary>
         /// Initializes a new instance of the <see cref="Client"/> class.
         /// </summary>
         /// <param name="address">Address on which server is listening for clients.</param>
         public Client(IPEndPoint address)
-            : this(address, null)
+            : this(address, null, null)
+        { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Client"/> class.
+        /// </summary>
+        /// <param name="address">Address on which server is listening for clients.</param>
+        /// <param name="config">Network configuration.</param>
+        public Client(IPEndPoint address, NetworkConfig config)
+            : this(address, null, config)
         { }
         /// <summary>
         /// Initializes a new instance of the <see cref="Client"/> class.
@@ -67,9 +94,19 @@ namespace TagBites.Net
         /// <param name="address">Address on which server is listening for clients.</param>
         /// <param name="credentials">Client credentials used for authentication.</param>
         public Client(IPEndPoint address, ClientCredentials credentials)
+            : this(address, credentials, null)
+        { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Client"/> class.
+        /// </summary>
+        /// <param name="address">Address on which server is listening for clients.</param>
+        /// <param name="credentials">Client credentials used for authentication.</param>
+        /// <param name="config">Network configuration.</param>
+        public Client(IPEndPoint address, ClientCredentials credentials, NetworkConfig config)
         {
             RemoteEndPoint = address ?? throw new ArgumentNullException(nameof(address));
             m_credentials = credentials;
+            _config = config ?? NetworkConfig.Default;
         }
 
 
@@ -144,12 +181,12 @@ namespace TagBites.Net
                         sslStream.AuthenticateAsClient(serverName ?? String.Empty);
 
                         stream = sslStream;
-                        connection = new NetworkConnection(client, sslStream);
+                        connection = new NetworkConnection(_config, client, sslStream);
                     }
                     else
                     {
                         stream = client.GetStream();
-                        connection = new NetworkConnection(client, (NetworkStream)stream);
+                        connection = new NetworkConnection(_config, client, (NetworkStream)stream);
                     }
                 }
                 catch (Exception e)

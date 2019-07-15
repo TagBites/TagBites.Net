@@ -163,6 +163,7 @@ namespace TagBites.Net
         /// </summary>
         public event EventHandler<ServerClientControllerResolveEventArgs> ControllerResolve;
 
+        private readonly NetworkConfig _config;
         private readonly X509Certificate m_sslCertificate;
         private TcpListener m_listener;
         private bool m_listening;
@@ -219,7 +220,16 @@ namespace TagBites.Net
         /// <param name="host">Address on which server is listening for clients.</param>
         /// <param name="port">Port on which server is listening for clients.</param>
         public Server(string host, int port)
-            : this(host, port, null)
+            : this(host, port, null, null)
+        { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Server"/> class.
+        /// </summary>
+        /// <param name="host">Address on which server is listening for clients.</param>
+        /// <param name="port">Port on which server is listening for clients.</param>
+        /// <param name="config">Network configuration.</param>
+        public Server(string host, int port, NetworkConfig config)
+            : this(host, port, null, config)
         { }
         /// <summary>
         /// Initializes a new instance of the <see cref="Server"/> class.
@@ -228,14 +238,32 @@ namespace TagBites.Net
         /// <param name="port">Port on which server is listening for clients.</param>
         /// <param name="certificate">Certificate used to secure connection (ssl).</param>
         public Server(string host, int port, X509Certificate certificate)
-            : this(new IPEndPoint(IPAddress.Parse(host), port), certificate)
+            : this(host, port, certificate, null)
+        { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Server"/> class.
+        /// </summary>
+        /// <param name="host">Address on which server is listening for clients.</param>
+        /// <param name="port">Port on which server is listening for clients.</param>
+        /// <param name="certificate">Certificate used to secure connection (ssl).</param>
+        /// <param name="config">Network configuration.</param>
+        public Server(string host, int port, X509Certificate certificate, NetworkConfig config)
+            : this(new IPEndPoint(IPAddress.Parse(host), port), certificate, config)
         { }
         /// <summary>
         /// Initializes a new instance of the <see cref="Server"/> class.
         /// </summary>
         /// <param name="address">Address on which server is listening for clients.</param>
         public Server(IPEndPoint address)
-            : this(address, null)
+            : this(address, null, null)
+        { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Server"/> class.
+        /// </summary>
+        /// <param name="address">Address on which server is listening for clients.</param>
+        /// <param name="config">Network configuration.</param>
+        public Server(IPEndPoint address, NetworkConfig config)
+            : this(address, null, config)
         { }
         /// <summary>
         /// Initializes a new instance of the <see cref="Server"/> class.
@@ -243,10 +271,20 @@ namespace TagBites.Net
         /// <param name="address">Address on which server is listening for clients.</param>
         /// <param name="certificate">Certificate used to secure connection (ssl).</param>
         public Server(IPEndPoint address, X509Certificate certificate)
+            : this(address, certificate, null)
+        { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Server"/> class.
+        /// </summary>
+        /// <param name="address">Address on which server is listening for clients.</param>
+        /// <param name="certificate">Certificate used to secure connection (ssl).</param>
+        /// <param name="config">Network configuration.</param>
+        public Server(IPEndPoint address, X509Certificate certificate, NetworkConfig config)
         {
             if (address == null)
                 throw new ArgumentNullException(nameof(address));
 
+            _config = config ?? NetworkConfig.Default;
             m_listener = new TcpListener(address);
             m_sslCertificate = certificate;
         }
@@ -386,7 +424,7 @@ namespace TagBites.Net
                     //networkStream.WriteTimeout = SendTimeOut;
 
                     stream = networkStream;
-                    connection = new NetworkConnection(tcpClient, networkStream);
+                    connection = new NetworkConnection(_config, tcpClient, networkStream);
                 }
                 else
                 {
@@ -396,7 +434,7 @@ namespace TagBites.Net
                     sslStream.AuthenticateAsServer(m_sslCertificate, false, SslProtocols.Tls, true);
 
                     stream = sslStream;
-                    connection = new NetworkConnection(tcpClient, sslStream);
+                    connection = new NetworkConnection(_config, tcpClient, sslStream);
                 }
 
                 // Authenticate
