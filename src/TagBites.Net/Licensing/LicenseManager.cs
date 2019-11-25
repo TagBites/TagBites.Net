@@ -61,7 +61,7 @@ namespace TagBites.Net.Licensing
 
             // Check date
             var versionDateTime = GetAssemblyBuildDate(assembly);
-            if (versionDateTime.HasValue && instance.SubscriptionUntil < versionDateTime.Value)
+            if (versionDateTime.HasValue && instance.SubscriptionUntil < versionDateTime.Value || instance.ValidUntil.HasValue && instance.ValidUntil.Value < DateTime.Today)
                 throw new Exception("This license has expired.");
         }
 

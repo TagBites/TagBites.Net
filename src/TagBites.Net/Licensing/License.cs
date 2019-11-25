@@ -11,19 +11,71 @@ namespace TagBites.Net.Licensing
 {
     class License
     {
+        private KeyValuePair<string, string>[] _metadata;
+
+        /// <summary>
+        /// Gets license ID.
+        /// </summary>
         public string Id { get; private set; }
+        /// <summary>
+        /// Gets type of license e.g. "User" or "Company".
+        /// </summary>
         public string Type { get; private set; }
+        /// <summary>
+        /// Gets product name.
+        /// </summary>
         public string ProductName { get; private set; }
+        /// <summary>
+        /// Gets date to which the subscription is valid.
+        /// </summary>
         public DateTime SubscriptionUntil { get; private set; }
+        /// <summary>
+        /// Gets date to which the license is valid. Null means no limits.
+        /// </summary>
+        public DateTime? ValidUntil { get; private set; }
+        /// <summary>
+        /// Gets full name of the license owner.
+        /// </summary>
         public string RegisteredTo { get; private set; }
 
         private byte[] Hash { get; set; }
         private byte[] Signature { get; set; }
 
+        /// <summary>
+        /// Gets license metadata, properties are included. 
+        /// </summary>
+        /// <param name="name">Name of the metadata.</param>
+        public string this[string name]
+        {
+            get
+            {
+                switch (name)
+                {
+                    case nameof(Id): return Id;
+                    case nameof(Type): return Type;
+                    case nameof(ProductName): return ProductName;
+                    case nameof(SubscriptionUntil): return SubscriptionUntil.ToString("yyyy-MM-dd");
+                    case nameof(RegisteredTo): return RegisteredTo;
+                    default:
+                        if (_metadata != null)
+                        {
+                            for (var i = _metadata.Length - 1; i >= 0; i--)
+                                if (_metadata[i].Key == name)
+                                    return _metadata[i].Value;
+                        }
+                        return null;
+                }
+            }
+        }
+
         private License()
         { }
 
 
+        /// <summary>
+        /// Verifies license signature.
+        /// </summary>
+        /// <param name="licenseVerifyKey">License key.</param>
         public bool VerifySignature(string licenseVerifyKey)
         {
             if (Signature == null)
@@ -37,6 +89,10 @@ namespace TagBites.Net.Licensing
             }
         }
 
+        /// <summary>
+        /// Creates license form xml.
+        /// </summary>
+        /// <param name="xml">License saved as xml string.</param>
         public static License FromXml(string xml)
         {
             var license = new License();
@@ -44,22 +100,70 @@ namespace TagBites.Net.Licensing
             // Parse
             var doc = XDocument.Parse(xml);
             var data = doc.Root?.Element("Data");
-            var signature = (string)doc.Root?.Element("Signature");
 
-            if (data == null
-                || string.IsNullOrEmpty(license.Id = (string)data.Element("Id"))
-                || string.IsNullOrEmpty(license.Type = (string)data.Element("Type"))
-                || string.IsNullOrEmpty(license.ProductName = (string)data.Element("ProductName"))
-                || string.IsNullOrEmpty(license.RegisteredTo = (string)data.Element("RegisteredTo"))
-                || string.IsNullOrEmpty(signature)
-                || !DateTime.TryParse((string)data.Element("SubscriptionUntil"), out var subscriptionUntil))
+            // Data
             {
-                ThrowInvalidLicenseException();
-                return null;
+                List<KeyValuePair<string, string>> metadata = null;
+
+                if (data != null)
+                {
+                    foreach (var element in data.Elements())
+                    {
+                        switch (element.Name.LocalName)
+                        {
+                            case nameof(Id): license.Id = (string)element; break;
+                            case nameof(Type): license.Type = (string)element; break;
+                            case nameof(ProductName): license.ProductName = (string)element; break;
+                            case nameof(RegisteredTo): license.RegisteredTo = (string)element; break;
+                            case nameof(SubscriptionUntil):
+                                {
+                                    if (!DateTime.TryParse((string)element, out var subscriptionUntil))
+                                        ThrowInvalidLicenseException();
+
+                                    license.SubscriptionUntil = subscriptionUntil;
+                                    break;
+                                }
+                            case nameof(ValidUntil):
+                                {
+                                    if (!DateTime.TryParse((string)element, out var validUntil))
+                                        ThrowInvalidLicenseException();
+
+                                    license.ValidUntil = validUntil;
+                                    break;
+                                }
+                            default:
+                                if (metadata == null)
+                                    metadata = new List<KeyValuePair<string, string>>();
+
+                                metadata.Add(new KeyValuePair<string, string>(element.Name.LocalName, (string)element));
+                                break;
+                        }
+                    }
+                }
+
+                if (data == null
+                    || string.IsNullOrEmpty(license.Id)
+                    || string.IsNullOrEmpty(license.Type)
+                    || string.IsNullOrEmpty(license.ProductName)
+                    || string.IsNullOrEmpty(license.RegisteredTo)
+                    || license.SubscriptionUntil == default)
+                {
+                    ThrowInvalidLicenseException();
+                    return null;
+                }
+
+                if (metadata != null)
+                    license._metadata = metadata.ToArray();
             }
 
-            // SubscriptionUntil
-            license.SubscriptionUntil = subscriptionUntil;
+            // Signature
+            {
+                var signature = (string)doc.Root?.Element("Signature");
+                if (string.IsNullOrEmpty(signature))
+                    ThrowInvalidLicenseException();
+                else
+                    license.Signature = Convert.FromBase64String(signature);
+            }
 
             // Hash
             using (var sha1 = SHA1.Create())
@@ -69,11 +173,12 @@ namespace TagBites.Net.Licensing
                 license.Hash = sha1.ComputeHash(buffer);
             }
 
-            // Signature
-            license.Signature = Convert.FromBase64String(signature);
-
             return license;
         }
+        /// <summary>
+        /// Creates license form compressed xml saved as base64.
+        /// </summary>
+        /// <param name="compressedBase64Xml">License saved as base64 of compressed xml.</param>
         public static License FromCompressedBase64Xml(string compressedBase64Xml)
         {
             try
