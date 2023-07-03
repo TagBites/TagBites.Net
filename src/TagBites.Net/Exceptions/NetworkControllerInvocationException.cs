@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace TagBites.Net
 {
@@ -15,7 +12,7 @@ namespace TagBites.Net
         /// </summary>
         OperationCancelled,
         /// <summary>
-        /// Error occured while receiving data.
+        /// Error occurred while receiving data.
         /// </summary>
         DataReceivingError,
         /// <summary>
@@ -27,13 +24,13 @@ namespace TagBites.Net
         /// </summary>
         MethodNotFound,
         /// <summary>
-        /// Exception occured while executing remote method.
+        /// Exception occurred while executing remote method.
         /// </summary>
         MethodInvokeException
     }
 
     /// <summary>
-    /// The exception that is thrown when another exception occured while remote method invocation.
+    /// The exception that is thrown when another exception occurred while remote method invocation.
     /// </summary>
     public class NetworkControllerInvocationException : Exception
     {
@@ -45,12 +42,16 @@ namespace TagBites.Net
         /// Gets remote exception message.
         /// </summary>
         public string RemoteMessage { get; }
+        /// <summary>
+        /// Gets full remote exception message.
+        /// </summary>
+        public string RemoteException { get; internal set; }
 
         internal NetworkControllerInvocationException(NetworkControllerInvocationExceptionType type, string remoteMessage)
             : this(type, remoteMessage, null)
         { }
         internal NetworkControllerInvocationException(NetworkControllerInvocationExceptionType type, string remoteMessage, Exception error)
-            : base("Remote controller execution exception occured.", error)
+            : base("Remote controller execution exception occurred.", error)
         {
             Type = type;
             RemoteMessage = remoteMessage;

@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using LicenseManager = TagBites.Net.Licensing.LicenseManager;
 
 namespace TagBites.Net
 {
@@ -88,10 +82,10 @@ namespace TagBites.Net
         }
     }
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
     /// <summary>
     /// TCP connection which allows to send objects messages and execute remote methods.
     /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class NetworkConnection : IDisposable
     {
         /// <summary>
@@ -305,7 +299,7 @@ namespace TagBites.Net
                         if (message.Value is ControllerMethodInvokeResultModel rm)
                         {
                             if (rm.ExceptionCode > 0)
-                                msg.Exception = new NetworkControllerInvocationException((NetworkControllerInvocationExceptionType)rm.ExceptionCode, rm.ExceptionMessage);
+                                msg.Exception = new NetworkControllerInvocationException((NetworkControllerInvocationExceptionType)rm.ExceptionCode, rm.ExceptionMessage) { RemoteException = rm.FullException };
                             else
                                 msg.Result = rm.Result;
                         }
@@ -405,9 +399,14 @@ namespace TagBites.Net
                             }
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception e)
                     {
-                        result.ExceptionMessage = ex.ToString();
+                        var ex = e;
+                        if (ex is TargetInvocationException { InnerException: not null } ie)
+                            ex = ie.InnerException;
+
+                        result.ExceptionMessage = ex.Message;
+                        result.FullException = ex.ToString();
                     }
                 }
             }
@@ -461,8 +460,13 @@ namespace TagBites.Net
             }
             catch (Exception e)
             {
+                var ex = e;
+                if (ex is TargetInvocationException { InnerException: not null } ie)
+                    ex = ie.InnerException;
+
                 result.ExceptionCode = (int)NetworkControllerInvocationExceptionType.MethodInvokeException;
-                result.ExceptionMessage = e.ToString();
+                result.ExceptionMessage = ex.Message;
+                result.FullException = ex.ToString();
             }
 
             return result;
@@ -535,7 +539,8 @@ namespace TagBites.Net
                                     Value = new ControllerMethodInvokeResultModel()
                                     {
                                         ExceptionCode = (int)NetworkControllerInvocationExceptionType.DataReceivingError,
-                                        ExceptionMessage = e.Message
+                                        ExceptionMessage = e.Message,
+                                        FullException = e.ToString()
                                     }
                                 };
                                 await WriteAsync(trackMessage);
@@ -1002,6 +1007,7 @@ namespace TagBites.Net
         {
             public int ExceptionCode { get; set; }
             public string ExceptionMessage { get; set; }
+            public string FullException { get; set; }
             public object Result { get; set; }
         }
 
