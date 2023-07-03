@@ -506,11 +506,7 @@ namespace TagBites.Net
                 {
                     try
                     {
-                        object result;
-                        if ((result = GetEvaluationObject()) != null)
-                            return result;
-
-                        result = await ReadObjectAsyncCore().ConfigureAwait(false);
+                        var result = await ReadObjectAsyncCore().ConfigureAwait(false);
                         if (result is TrackMessage m)
                         {
 #pragma warning disable 4014
@@ -891,41 +887,6 @@ namespace TagBites.Net
 
                 i += read;
             }
-        }
-
-        #endregion
-
-        #region Evaluation
-
-        private static long s_startEvaluationTime;
-        private long m_nextEvaluationTime;
-
-
-        private object GetEvaluationObject()
-        {
-            if (m_nextEvaluationTime > 0)
-            {
-                var now = DateTime.UtcNow.Ticks;
-                if (m_nextEvaluationTime < now)
-                {
-                    m_nextEvaluationTime = now + TimeSpan.TicksPerSecond * 10;
-                    return "This is evaluation version. Please purchase a license.";
-                }
-            }
-
-            return null;
-        }
-        internal void StartEvaluation()
-        {
-            if (LicenseManager.HasLicense)
-                return;
-
-            var now = DateTime.UtcNow.Ticks;
-
-            if (s_startEvaluationTime == 0)
-                s_startEvaluationTime = now + TimeSpan.TicksPerMinute * 5;
-
-            m_nextEvaluationTime = Math.Max(s_startEvaluationTime, now) + TimeSpan.TicksPerSecond * 10;
         }
 
         #endregion

@@ -209,8 +209,6 @@ namespace TagBites.Net
                 }
 
                 Connection = connection;
-                connection.StartEvaluation();
-
                 OnConnected();
 
                 RemoteEndPoint = connection.TcpClient.Client.RemoteEndPoint;

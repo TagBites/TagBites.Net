@@ -466,7 +466,6 @@ namespace TagBites.Net
                     }
                 }
                 await connection.WriteAsync(true);
-                connection.StartEvaluation();
 
                 // Create
                 var client = new ServerClient(this, identity, connection);
