@@ -1,7 +1,6 @@
-﻿namespace ChatWithControllers
+namespace ChatWithControllers;
+
+public interface IChatClient
 {
-    public interface IChatClient
-    {
-        void MessageReceive(string userName, string message);
-    }
+    void MessageReceive(string userName, string message);
 }

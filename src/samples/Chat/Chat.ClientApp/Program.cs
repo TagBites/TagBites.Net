@@ -1,22 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TagBites.Net;
+﻿using TagBites.Net;
 
-namespace Chat.ClientApp
+namespace Chat.ClientApp;
+
+internal class Program
 {
-    class Program
+    private static async Task Main()
     {
-        static async Task Main(string[] args)
-        {
-            var client = new Client("127.0.0.1", 82);
-            client.Received += (s, e) => Console.WriteLine(e.Message.ToString());
-            await client.ConnectAsync();
+        var client = new Client("127.0.0.1", 82);
+        client.Received += (s, e) => Console.WriteLine(e.Message.ToString());
+        await client.ConnectAsync();
 
-            while (true)
-                await client.SendAsync(Console.ReadLine());
-        }
+        while (true)
+            await client.SendAsync(Console.ReadLine());
+
+        // ReSharper disable once FunctionNeverReturns
     }
 }

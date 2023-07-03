@@ -1,7 +1,6 @@
-﻿namespace ChatWithControllers
+﻿namespace ChatWithControllers;
+
+public interface IChatServer
 {
-    public interface IChatServer
-    {
-        void Send(string message);
-    }
+    void Send(string message);
 }

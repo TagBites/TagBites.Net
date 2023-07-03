@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+namespace TagBites.Net;
 
-namespace TagBites.Net
+/// <summary>
+/// The exception that is thrown when object transfer protocol is violated.
+/// </summary>
+public class NetworkObjectProtocolViolationException : System.Net.ProtocolViolationException
 {
-    /// <summary>
-    /// The exception that is thrown when object transfer protocol is violated.
-    /// </summary>
-    public class NetworkObjectProtocolViolationException : System.Net.ProtocolViolationException
-    {
-        internal NetworkObjectProtocolViolationException(Exception innerError)
-            : base(innerError.Message)
-        { }
-    }
+    internal NetworkObjectProtocolViolationException(Exception innerError)
+        : base(innerError.Message)
+    { }
 }
