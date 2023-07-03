@@ -40,7 +40,7 @@ namespace TagBites.Net
         public NetworkConfig()
         {
             Encoding = Encoding.UTF8;
-            Serializer = new BinaryNetworkSerializer();
+            Serializer = new NewtonsoftJsonSerializer();
         }
         /// <summary>
         /// Initializes a new instance of the <see cref="NetworkConfig"/> class.
@@ -49,7 +49,7 @@ namespace TagBites.Net
         public NetworkConfig(Encoding encoding)
         {
             Encoding = encoding ?? throw new ArgumentNullException(nameof(encoding));
-            Serializer = new BinaryNetworkSerializer();
+            Serializer = new NewtonsoftJsonSerializer();
         }
         /// <summary>
         /// Initializes a new instance of the <see cref="NetworkConfig"/> class.

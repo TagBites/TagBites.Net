@@ -13,7 +13,7 @@ namespace TagBites.Net.Tests
         public UnitTestBase()
         {
             Config = NetworkConfig.Default;
-            ServerPort = 54300;
+            ServerPort = 12500;
             ServerHost = "127.0.0.1";
         }
 

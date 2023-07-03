@@ -119,8 +119,6 @@ namespace TagBites.Net
 
         private bool m_listening;
         private Task m_listeningTask;
-        private Encoding _encoding;
-        private INetworkSerializer _serializer;
 
         private int m_messageId;
         private readonly List<ControllerMethodInvokeState> m_messages = new List<ControllerMethodInvokeState>();

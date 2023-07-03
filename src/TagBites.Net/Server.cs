@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 
 namespace TagBites.Net
 {
@@ -431,7 +427,12 @@ namespace TagBites.Net
                     var sslStream = new SslStream(tcpClient.GetStream(), false);
                     //sslStream.ReadTimeout = ReceiveTimeOut;
                     //sslStream.WriteTimeout = SendTimeOut;
-                    sslStream.AuthenticateAsServer(m_sslCertificate, false, SslProtocols.Tls, true);
+                    var sslProtocols = SslProtocols.Tls12;
+#if NET7_0_OR_GREATER
+                    sslProtocols |= SslProtocols.Tls13;
+#endif
+
+                    await sslStream.AuthenticateAsServerAsync(m_sslCertificate, false, sslProtocols, true).ConfigureAwait(false);
 
                     stream = sslStream;
                     connection = new NetworkConnection(_config, tcpClient, sslStream);
