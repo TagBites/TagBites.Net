@@ -78,8 +78,8 @@ public class Server : IDisposable
                 if (_listening)
                 {
                     _listeningTask = _listeningTask != null
-                        ? _listeningTask.ContinueWith(t => ListeningTask())
-                        : Task.Run(ListeningTask);
+                        ? _listeningTask.ContinueWith(t => ListeningCore())
+                        : Task.Run(ListeningCore);
                 }
                 else
                 {
@@ -261,7 +261,15 @@ public class Server : IDisposable
             throw new AggregateException("Error occurred while sending message to all clients.", ex);
     }
 
-    private async void ListeningTask()
+    public async Task ListenAsync()
+    {
+        if (Listening)
+            return;
+
+        _listening = true;
+        await ListeningCore();
+    }
+    private async Task ListeningCore()
     {
         _listener.Start();
 
