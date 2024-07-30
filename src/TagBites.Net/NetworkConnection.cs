@@ -75,8 +75,8 @@ public sealed class NetworkConnection : IDisposable
                 if (value)
                 {
                     _listeningTask = _listeningTask != null
-                        ? _listeningTask.ContinueWith(t => ListeningTask())
-                        : Task.Run(ListeningTask);
+                        ? _listeningTask.ContinueWith(t => ListeningCore())
+                        : Task.Run(ListeningCore);
                 }
 
                 _listening = value;
@@ -119,13 +119,13 @@ public sealed class NetworkConnection : IDisposable
     }
 
 
-    private async void ListeningTask()
+    private async Task ListeningCore()
     {
         while (Listening)
         {
             try
             {
-                var message = await ReadAsyncCore().ConfigureAwait(false);
+                var message = await ReadAsyncCore();
                 Received?.Invoke(this, new NetworkConnectionMessageEventArgs(message));
             }
             catch (NetworkConnectionBreakException)
@@ -997,12 +997,17 @@ public sealed class NetworkConnection : IDisposable
 
         protected override object Invoke(MethodInfo targetMethod, object[] args)
         {
-            if (typeof(Task).IsAssignableFrom(targetMethod.ReturnType))
-                return _connection.ControllerMethodInvoke(_controllerType, targetMethod, args);
-
             var task = _connection.ControllerMethodInvoke(_controllerType, targetMethod, args);
-            task.Wait();
-            return task.Result;
+
+            if (typeof(Task).IsAssignableFrom(targetMethod.ReturnType) && targetMethod.ReturnType != typeof(Task))
+            {
+                return typeof(ControllerProxy)
+                    .GetMethod(nameof(ChangeTaskType), BindingFlags.Static | BindingFlags.NonPublic)!
+                    .MakeGenericMethod(GetGenericResultType(targetMethod.ReturnType))
+                    .Invoke(null, new object[] { task });
+            }
+
+            return task.GetAwaiter().GetResult();
         }
 
         public static T Create<T>(NetworkConnection connection)
@@ -1011,6 +1016,22 @@ public sealed class NetworkConnection : IDisposable
             ((ControllerProxy)(object)proxy)._connection = connection;
             ((ControllerProxy)(object)proxy)._controllerType = typeof(T);
             return proxy;
+        }
+
+        private static async Task<T> ChangeTaskType<T>(Task<object> executeTask)
+        {
+            var result = await executeTask;
+            return result is T t ? t : default;
+        }
+        private static Type GetGenericResultType(Type taskType)
+        {
+            for (var type = taskType; type != typeof(Task); type = type.BaseType)
+            {
+                if (type!.IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>))
+                    return type.GetGenericArguments()[0];
+            }
+
+            return null;
         }
     }
 #endif
