@@ -997,13 +997,20 @@ public sealed class NetworkConnection : IDisposable
 
         protected override object Invoke(MethodInfo targetMethod, object[] args)
         {
+            var returnType = targetMethod!.ReturnType;
+            var returnTypeIsTask = typeof(Task).IsAssignableFrom(returnType);
+            var returnTaskType = returnTypeIsTask ? GetGenericResultType(returnType) : null;
+
             var task = _connection.ControllerMethodInvoke(_controllerType, targetMethod, args);
 
-            if (typeof(Task).IsAssignableFrom(targetMethod.ReturnType) && targetMethod.ReturnType != typeof(Task))
+            if (returnTypeIsTask)
             {
+                if (returnTaskType == null)
+                    return task;
+
                 return typeof(ControllerProxy)
                     .GetMethod(nameof(ChangeTaskType), BindingFlags.Static | BindingFlags.NonPublic)!
-                    .MakeGenericMethod(GetGenericResultType(targetMethod.ReturnType))
+                    .MakeGenericMethod(returnTaskType)
                     .Invoke(null, new object[] { task });
             }
 
