@@ -1,0 +1,33 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/.github/">
+    <File Path=".github/workflows/build-and-test.yml" />
+    <File Path=".github/workflows/publish-preview.yml" />
+    <File Path=".github/workflows/publish.yml" />
+  </Folder>
+  <Folder Name="/.root/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="global.json" />
+    <File Path="LICENSE.md" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/samples/" />
+  <Folder Name="/samples/Chat/">
+    <Project Path="samples/Chat/Chat.ClientApp/Chat.ClientApp.csproj" />
+    <Project Path="samples/Chat/Chat.ServerApp/Chat.ServerApp.csproj" />
+  </Folder>
+  <Folder Name="/samples/ChatWithControllers/">
+    <Project Path="samples/ChatWithControllers/ChatWithControllers.Core/ChatWithControllers.Core.csproj" />
+    <Project Path="samples/ChatWithControllers/ChatWithControllers.ClientApp/ChatWithControllers.ClientApp.csproj" />
+    <Project Path="samples/ChatWithControllers/ChatWithControllers.ServerApp/ChatWithControllers.ServerApp.csproj" />
+  </Folder>
+  <Project Path="src/TagBites.Net/TagBites.Net.csproj" />
+  <Project Path="tests/TagBites.Net.Tests/TagBites.Net.Tests.csproj" />
+</Solution>

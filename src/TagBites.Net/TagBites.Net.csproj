@@ -3,51 +3,25 @@
   <!-- Targets -->
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net7.0</TargetFrameworks>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <!-- Build -->
   <PropertyGroup>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <!-- Package -->
+  <!-- Package info -->
   <PropertyGroup>
     <Description>Lightweight and simple TCP client-server .NET library with RMI support.</Description>
-    <PackageTags>TagBites.Net;Net;TCP;IP;TCP/IP;server;client;client-server;RMI;Remote Method Invocation</PackageTags>
-
+    <PackageTags>tcp; ip; sockets; networking; server; client; client-server; rmi</PackageTags>
     <PackageProjectUrl>https://www.tagbites.com/net</PackageProjectUrl>
-    <PackageIconUrl>https://www.tagbites.com/net/icon.png</PackageIconUrl>
-
-    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/TagBites/TagBites.Net.git</RepositoryUrl>
-    <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
 
   <!-- References -->
   <ItemGroup>
     <PackageReference Include="System.Reflection.DispatchProxy" Version="4.3.0" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-  </ItemGroup>
-
-  <!-- Readme, License -->
-  <ItemGroup>
-    <None Include="..\..\icon.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Include="..\..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Include="..\..\LICENSE.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
   </ItemGroup>
 
 </Project>
