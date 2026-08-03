@@ -1,4 +1,3 @@
-using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -300,6 +299,7 @@ public class Server : IDisposable
     {
         Stream stream = null;
         NetworkConnection connection = null;
+        ServerClient client = null;
         var closeConnection = true;
 
         try
@@ -361,12 +361,12 @@ public class Server : IDisposable
             await connection.WriteAsync(true);
 
             // Create
-            var client = new ServerClient(this, identity, connection);
-
-            ClientConnected?.Invoke(this, new ServerClientEventArgs(client));
+            client = new ServerClient(this, identity, connection);
 
             lock (_clients)
                 _clients.Add(client);
+
+            ClientConnected?.Invoke(this, new ServerClientEventArgs(client));
 
             connection.Listening = true;
             closeConnection = false;
@@ -379,6 +379,10 @@ public class Server : IDisposable
         {
             if (closeConnection)
             {
+                if (client != null)
+                    lock (_clients)
+                        _clients.Remove(client);
+
                 if (connection != null)
                     try { connection.Close(); }
                     catch { /* ignored */ }
