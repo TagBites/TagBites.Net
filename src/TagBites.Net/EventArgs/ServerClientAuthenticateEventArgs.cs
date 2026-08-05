@@ -14,7 +14,7 @@ public class ServerClientAuthenticateEventArgs : EventArgs
     /// </summary>
     public bool Authenticated { get; set; }
     /// <summary>
-    /// Gets or sets client identity. It could be assign based on credentials.
+    /// Gets or sets client identity. It could be assigned based on credentials.
     /// </summary>
     public object Identity { get; set; }
 

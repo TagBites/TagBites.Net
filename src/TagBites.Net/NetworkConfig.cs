@@ -15,6 +15,9 @@ public class NetworkConfig
     /// <summary>
     /// Gets or sets default network configuration.
     /// </summary>
+    /// <remarks>
+    /// Used by every <see cref="Server"/> and <see cref="Client"/> created without an explicit configuration.
+    /// </remarks>
     public static NetworkConfig Default
     {
         get => s_default;
@@ -29,7 +32,7 @@ public class NetworkConfig
 
     /// <summary>
     /// Gets serializer used to serialize/deserialize object send through socket.
-    /// Default: proxy to <see cref="System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/>.
+    /// Default: <c>Json.NET</c> based implementation.
     /// </summary>
     public INetworkSerializer Serializer { get; }
 

@@ -34,7 +34,7 @@ public class ServerClient : NetworkClient
 
 
     /// <summary>
-    /// Register local controller.
+    /// Registers a local controller. The instance is created on first use.
     /// </summary>
     /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
     /// <typeparam name="TController">Controller type.</typeparam>
@@ -43,7 +43,7 @@ public class ServerClient : NetworkClient
         Connection.Use<TControllerInterface, TController>();
     }
     /// <summary>
-    /// Register local controller.
+    /// Registers an already created local controller.
     /// </summary>
     /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
     /// <typeparam name="TController">Controller type.</typeparam>

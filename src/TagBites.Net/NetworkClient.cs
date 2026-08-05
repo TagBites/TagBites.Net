@@ -59,7 +59,7 @@ public abstract class NetworkClient : IDisposable
     }
 
     /// <summary>
-    /// Gets a value indicating whether object already disposed or not.
+    /// Gets a value indicating whether the object has been disposed.
     /// </summary>
     public bool IsDisposed { get; private set; }
     /// <summary>

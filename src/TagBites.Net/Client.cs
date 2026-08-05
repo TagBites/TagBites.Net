@@ -108,7 +108,7 @@ public class Client : NetworkClient
 
 
     /// <summary>
-    /// Register local controller.
+    /// Registers a local controller. The instance is created on first use.
     /// </summary>
     /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
     /// <typeparam name="TController">Controller type.</typeparam>
@@ -121,7 +121,7 @@ public class Client : NetworkClient
             _controllers[name] = typeof(TController);
     }
     /// <summary>
-    /// Register local controller.
+    /// Registers an already created local controller.
     /// </summary>
     /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
     /// <typeparam name="TController">Controller type.</typeparam>

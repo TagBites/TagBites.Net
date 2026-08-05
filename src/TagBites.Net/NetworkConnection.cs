@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Globalization;
-using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Reflection;
@@ -51,7 +50,7 @@ public sealed class NetworkConnection : IDisposable
     private Stream Stream { get; set; }
 
     /// <summary>
-    /// Gets a value indicating whether object already disposed or not.
+    /// Gets a value indicating whether the object has been disposed.
     /// </summary>
     public bool IsDisposed { get; private set; }
     /// <summary>
@@ -167,7 +166,7 @@ public sealed class NetworkConnection : IDisposable
     }
 
     /// <summary>
-    /// Register local controller.
+    /// Registers a local controller. The instance is created on first use.
     /// </summary>
     /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
     /// <typeparam name="TController">Controller type.</typeparam>
@@ -176,7 +175,7 @@ public sealed class NetworkConnection : IDisposable
         Use<TControllerInterface, TController>(new TController());
     }
     /// <summary>
-    /// Register local controller.
+    /// Registers an already created local controller.
     /// </summary>
     /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
     /// <typeparam name="TController">Controller type.</typeparam>
@@ -989,7 +988,7 @@ public sealed class NetworkConnection : IDisposable
             }
         }
 #else
-    public class ControllerProxy : DispatchProxy
+    private class ControllerProxy : DispatchProxy
     {
         private NetworkConnection _connection;
         private Type _controllerType;

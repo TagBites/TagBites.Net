@@ -56,7 +56,7 @@ public class Server : IDisposable
     public bool DisconnectClientsOnDispose { get; set; } = true;
 
     /// <summary>
-    /// Gets a value indicating whether object already disposed or not.
+    /// Gets a value indicating whether the object has been disposed.
     /// </summary>
     public bool IsDisposed { get; private set; }
     /// <summary>
@@ -175,7 +175,7 @@ public class Server : IDisposable
 
 
     /// <summary>
-    /// Register local controller.
+    /// Registers a local controller. The instance is created on first use.
     /// </summary>
     /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
     /// <typeparam name="TController">Controller type.</typeparam>
@@ -188,11 +188,11 @@ public class Server : IDisposable
             _controllers[name] = typeof(TController);
     }
     /// <summary>
-    /// Register local controller.
+    /// Registers a local controller created separately for each client.
     /// </summary>
     /// <typeparam name="TControllerInterface">Controller interface.</typeparam>
     /// <typeparam name="TController">Controller type.</typeparam>
-    /// <param name="controllerProvider">Controller instance.</param>
+    /// <param name="controllerProvider">Function which creates the controller for a client.</param>
     public void Use<TControllerInterface, TController>(Func<ServerClient, TController> controllerProvider) where TController : TControllerInterface
     {
         if (controllerProvider == null)
@@ -260,6 +260,13 @@ public class Server : IDisposable
             throw new AggregateException("Error occurred while sending message to all clients.", ex);
     }
 
+    /// <summary>
+    /// Accepts clients on the calling task, until <see cref="Listening"/> is set to <c>false</c> or the server is disposed.
+    /// Returns immediately when the server is already listening.
+    /// </summary>
+    /// <remarks>
+    /// Setting <see cref="Listening"/> to <c>true</c> does the same on a background thread.
+    /// </remarks>
     public async Task ListenAsync()
     {
         if (Listening)
