@@ -1,29 +1,29 @@
-﻿using TagBites.Net;
+using TagBites.Net;
 
 namespace ChatWithControllers.ClientApp;
 
 internal class Program
 {
-    private static void Main()
+    private static async Task Main()
     {
-        var client = new Client("127.0.0.1", 10500);
+        const string host = "127.0.0.1";
+        const int port = 10500;
+
+        var client = new Client(host, port);
         client.Use<IChatClient, ChatClient>();
-        client.ConnectAsync().Wait();
+        await client.ConnectAsync();
 
-        while (true)
-        {
-            var message = Console.ReadLine();
+        Console.WriteLine($"Connected to server {host}:{port}. Type a message and press Enter.");
+
+        while (Console.ReadLine() is { } message)
             client.GetController<IChatServer>().Send(message);
-        }
-
-        // ReSharper disable once FunctionNeverReturns
     }
 }
 
 public class ChatClient : IChatClient
 {
-    public void MessageReceive(string userName, string message)
+    public void OnMessage(string userName, string message)
     {
-        Console.WriteLine($"{userName ?? "Server"}: {message}");
+        Console.WriteLine(userName == null ? message : $"{userName}: {message}");
     }
 }

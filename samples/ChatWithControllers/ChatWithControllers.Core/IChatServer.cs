@@ -1,4 +1,4 @@
-﻿namespace ChatWithControllers;
+namespace ChatWithControllers;
 
 public interface IChatServer
 {

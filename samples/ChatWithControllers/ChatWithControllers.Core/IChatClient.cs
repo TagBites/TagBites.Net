@@ -2,5 +2,5 @@ namespace ChatWithControllers;
 
 public interface IChatClient
 {
-    void MessageReceive(string userName, string message);
+    void OnMessage(string userName, string message);
 }
