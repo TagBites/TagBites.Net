@@ -1,10 +1,23 @@
 # TagBites.Net
 
+[![Nuget](https://img.shields.io/nuget/v/TagBites.Net.svg)](https://www.nuget.org/packages/TagBites.Net/)
+![.NET Standard 2.0](https://img.shields.io/badge/.NET%20Standard-2.0-512BD4)
+[![License](https://img.shields.io/github/license/TagBites/TagBites.Net)](https://github.com/TagBites/TagBites.Net/blob/master/LICENSE.md)
+[![Downloads](https://img.shields.io/nuget/dt/TagBites.Net.svg)](https://www.nuget.org/packages/TagBites.Net/)
+
 Lightweight and simple TCP client-server .NET library with RMI support.
 
-NuGet Package: https://www.nuget.org/packages/TagBites.Net/
+## Install
+
+```
+dotnet add package TagBites.Net
+```
+
+Targets `netstandard2.0` and `net7.0`. The only dependency is `Newtonsoft.Json`, plus `System.Reflection.DispatchProxy` on `netstandard2.0`.
 
 ## Chat example
+
+A console chat. Every client sends text lines to the server, and the server broadcasts each message to the other clients, together with connect and disconnect notifications.
 
 ### Client code
 ```csharp
@@ -27,14 +40,16 @@ server.Listening = true; // starts a new thread
 Console.ReadLine(); // for console application to prevent app from closing
 ```
 
-In this example a `string` type is used for communication, but any serializable objects can be send/received. 
+In this example a `string` type is used for communication, but any serializable objects can be sent/received. 
 
-By default `Newtonsoft.Json` is used for serialization, but it can be replaced with a [custom implementation](docs/configuration.md). 
+By default `Newtonsoft.Json` is used for serialization, but it can be replaced with a [custom implementation](docs/guides/serialization.md). 
 
 Full example in this repository: [samples/Chat](samples/Chat).
 
 ## Chat example using RMI (Remote Method Invocation)
-    
+
+The same chat, written as method calls instead of messages. Both sides share two interfaces: the client calls `IChatServer.Send` on the server, and the server calls `IChatClient.OnMessage` on every client. Serialization and dispatch happen behind the proxy returned by `GetController<T>()`.
+
 ### Client code
 ```csharp
 var client = new Client("127.0.0.1", 10500);
@@ -45,9 +60,9 @@ while (Console.ReadLine() is { } message)
     client.GetController<IChatServer>().Send(message);
 ```
 
-The method `Use<TControllerInterface, TController>()` registers a controller that can be used by the server. The server site can use the `IChatClient` interface to execute methods implemented by `ChatClient` on the client's site. The client/server can registers many controllers. The controller instance will be created on first use.
+The method `Use<TControllerInterface, TController>()` registers a controller that can be used by the server. The server side can use the `IChatClient` interface to execute methods implemented by `ChatClient` on the client's side. The client/server can register many controllers. The controller instance will be created on first use.
 
-`GetController<T>()` returns the proxy interface to the class register in the remote site. The calling method in this instance will invoke method in the remote site. The Controller can invoke methods with primitive or serializable parameter types and returns void/Task or any primitive or serializable type.
+`GetController<T>()` returns a proxy implementing the interface registered on the remote side. Calling a method on it invokes that method on the remote side. A controller method takes primitive or serializable parameters and returns `void`, `Task`, or any primitive or serializable type.
 
 ### Server code
 ```csharp
@@ -108,3 +123,18 @@ public class ChatServer : IChatServer
 ```
 
 Full example in this repository: [samples/ChatWithControllers](samples/ChatWithControllers).
+
+## Use cases
+
+Two processes on one machine that exchange objects, where a HTTP endpoint would be too much ceremony. A desktop application talking to a local background service. A test harness driving an application from the outside. A small cluster of worker processes reporting to a coordinator.
+
+## Limitations
+
+There is no message size limit and no rate limiting, so both sides have to be trusted. Authentication is a callback, not a protocol, and credentials travel in plain text unless the connection uses a certificate. Both ends must be TagBites.Net, because the library speaks its own wire format.
+
+## Links
+
+- [Documentation](https://tagbites.com/net/)
+- Guides: [Architecture](docs/guides/architecture.md), [Authentication](docs/guides/authentication.md), [Configuration](docs/guides/configuration.md), [Serialization](docs/guides/serialization.md), [RMI](docs/guides/rmi.md), [Error handling](docs/guides/error-handling.md)
+- [NuGet package](https://www.nuget.org/packages/TagBites.Net/)
+- [Source code](https://github.com/TagBites/TagBites.Net)

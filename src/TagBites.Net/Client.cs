@@ -143,7 +143,7 @@ public class Client : NetworkClient
     /// </summary>
     public Task ConnectAsync() => ConnectAsync(false);
     /// <summary>
-    /// Starts the SSL connection .
+    /// Starts the SSL connection.
     /// </summary>
     public Task ConnectSslAsync() => ConnectAsync(true);
     /// <summary>
