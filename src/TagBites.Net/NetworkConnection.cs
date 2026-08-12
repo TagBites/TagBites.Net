@@ -737,7 +737,7 @@ public sealed class NetworkConnection : IDisposable
         switch (typeCode)
         {
             case TypeCode.DateTime:
-                value = DateTime.Parse(encoding.GetString(content), CultureInfo.InvariantCulture);
+                value = DateTime.Parse(encoding.GetString(content), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
                 break;
 
             case TypeCode.String:
