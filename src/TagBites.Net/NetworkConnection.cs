@@ -592,6 +592,10 @@ public sealed class NetworkConnection : IDisposable
 
         var typeCode = Convert.GetTypeCode(value);
 
+        // Need to send with type info (depended on a serializer)
+        if (value is Enum)
+            typeCode = TypeCode.Object;
+
         listBuffer.AddRange(BitConverter.GetBytes(messageId));
         listBuffer.AddRange(BitConverter.GetBytes(inResponseToId));
         listBuffer.Add((byte)typeCode);
