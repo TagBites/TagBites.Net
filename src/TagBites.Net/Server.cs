@@ -248,11 +248,13 @@ public class Server : IDisposable
                 {
                     await client.SendAsync(message);
                 }
-                catch (Exception e) when (!(e is NetworkConnectionBreakException) && !(e is ObjectDisposedException))
+                catch (Exception e)
                 {
-                    if (ex == null)
-                        ex = new List<Exception>();
+                    // A client disconnected mid-send, cleanup runs in parallel
+                    if (e is NetworkConnectionBreakException or ObjectDisposedException or InvalidOperationException)
+                        continue;
 
+                    ex ??= [];
                     ex.Add(e);
                 }
 
