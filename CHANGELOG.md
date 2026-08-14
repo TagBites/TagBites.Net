@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `SendToAllAsync` delivers the message to the remaining clients when one of them disconnects mid-send. It used to stop at the first disconnected client.
 - A `DateTime` keeps its `Kind` in transit. A UTC value used to arrive converted to local time.
 - Sending while the connection is being disposed throws `NetworkConnectionBreakException` instead of `NullReferenceException`.
+- Connections open on Linux. It used to fail with `SocketException`: invalid argument.
 
 ## [1.0.2] - 2024-07-31
 

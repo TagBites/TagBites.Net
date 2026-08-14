@@ -102,8 +102,9 @@ public sealed class NetworkConnection : IDisposable
             throw new ArgumentException("TcpClient is not connected.", nameof(tcpClient));
 
         TcpClient = tcpClient;
-        tcpClient.ReceiveTimeout = Timeout.Infinite;
-        tcpClient.SendTimeout = Timeout.Infinite;
+        // Zero means infinite for socket timeouts, Timeout.Infinite is rejected with EINVAL on Linux
+        tcpClient.ReceiveTimeout = 0;
+        tcpClient.SendTimeout = 0;
         Stream = stream;
         _config = config;
 
