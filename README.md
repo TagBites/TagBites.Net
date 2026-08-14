@@ -42,7 +42,7 @@ Console.ReadLine(); // for console application to prevent app from closing
 
 In this example a `string` type is used for communication, but any serializable objects can be sent/received. 
 
-By default `Newtonsoft.Json` is used for serialization, but it can be replaced with a [custom implementation](docs/guides/serialization.md). 
+By default `Newtonsoft.Json` is used for serialization, but it can be replaced with a [custom implementation](https://tagbites.com/net/guides/serialization). 
 
 Full example in this repository: [samples/Chat](samples/Chat).
 
@@ -124,17 +124,11 @@ public class ChatServer : IChatServer
 
 Full example in this repository: [samples/ChatWithControllers](samples/ChatWithControllers).
 
-## Use cases
-
-Two processes on one machine that exchange objects, where a HTTP endpoint would be too much ceremony. A desktop application talking to a local background service. A test harness driving an application from the outside. A small cluster of worker processes reporting to a coordinator.
-
 ## Limitations
 
-There is no message size limit and no rate limiting, so both sides have to be trusted. Authentication is a callback, not a protocol, and credentials travel in plain text unless the connection uses a certificate. Both ends must be TagBites.Net, because the library speaks its own wire format.
+There is no message size limit and no rate limiting, so both sides have to be trusted. Authentication is a callback, not a protocol, and credentials travel in plain text unless the connection uses a certificate.
 
 ## Links
 
-- [Documentation](https://tagbites.com/net/)
-- Guides: [Architecture](docs/guides/architecture.md), [Authentication](docs/guides/authentication.md), [Configuration](docs/guides/configuration.md), [Serialization](docs/guides/serialization.md), [RMI](docs/guides/rmi.md), [Error handling](docs/guides/error-handling.md)
-- [NuGet package](https://www.nuget.org/packages/TagBites.Net/)
-- [Source code](https://github.com/TagBites/TagBites.Net)
+- Guides: [Architecture](https://tagbites.com/net/guides/architecture/), [Authentication](https://tagbites.com/net/guides/authentication/), [Configuration](https://tagbites.com/net/guides/configuration/), [Serialization](https://tagbites.com/net/guides/serialization/), [RMI](https://tagbites.com/net/guides/rmi/), [Error handling](https://tagbites.com/net/guides/error-handling/)
+- [Changelog](https://tagbites.com/net/changelog/)
