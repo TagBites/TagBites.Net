@@ -434,9 +434,13 @@ public sealed class NetworkConnection : IDisposable
     private async Task<object> ReadAsyncCore()
     {
         // ReSharper disable once InconsistentlySynchronizedField
+        var semaphore = _readSemaphore;
+        if (semaphore == null)
+            throw new NetworkConnectionBreakException(null);
+
         try
         {
-            await _readSemaphore.WaitAsync(_token).ConfigureAwait(false);
+            await semaphore.WaitAsync(_token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -444,6 +448,10 @@ public sealed class NetworkConnection : IDisposable
                 throw new NetworkConnectionBreakException(null);
 
             throw;
+        }
+        catch (ObjectDisposedException)
+        {
+            throw new NetworkConnectionBreakException(null);
         }
 
 
@@ -521,11 +529,7 @@ public sealed class NetworkConnection : IDisposable
         }
         finally
         {
-            try
-            {
-                // ReSharper disable once InconsistentlySynchronizedField
-                _readSemaphore?.Release();
-            }
+            try { semaphore.Release(); }
             catch { /* ignored (disposed) */ }
         }
     }
@@ -536,10 +540,13 @@ public sealed class NetworkConnection : IDisposable
     /// <param name="value">Object to be written on the connection.</param>
     public async Task WriteAsync(object value)
     {
-        // ReSharper disable once InconsistentlySynchronizedField
+        var semaphore = _writeSemaphore;
+        if (semaphore == null)
+            throw new NetworkConnectionBreakException(null);
+
         try
         {
-            await _writeSemaphore.WaitAsync(_token).ConfigureAwait(false);
+            await semaphore.WaitAsync(_token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -547,6 +554,10 @@ public sealed class NetworkConnection : IDisposable
                 throw new NetworkConnectionBreakException(null);
 
             throw;
+        }
+        catch (ObjectDisposedException)
+        {
+            throw new NetworkConnectionBreakException(null);
         }
 
         try
@@ -584,11 +595,7 @@ public sealed class NetworkConnection : IDisposable
         }
         finally
         {
-            try
-            {
-                // ReSharper disable once InconsistentlySynchronizedField
-                _writeSemaphore?.Release();
-            }
+            try { semaphore.Release(); }
             catch { /* ignored (disposed) */ }
         }
     }
@@ -850,9 +857,14 @@ public sealed class NetworkConnection : IDisposable
     /// </summary>
     public void Close()
     {
-        if (!IsDisposed)
-            // ReSharper disable once MethodSupportsCancellation
-            _writeSemaphore.Wait();
+        var semaphore = _writeSemaphore;
+        if (!IsDisposed && semaphore != null)
+            try
+            {
+                // ReSharper disable once MethodSupportsCancellation
+                semaphore.Wait();
+            }
+            catch (ObjectDisposedException) { /* ignored */ }
 
         lock (_disposeLocker)
             if (!IsDisposed)
