@@ -61,7 +61,8 @@ public class Server : IDisposable
     public bool IsDisposed { get; private set; }
     /// <summary>
     /// Gets or sets a value indicating whether server is listening for clients.
-    /// Setting <c>true</c> starts background thread.
+    /// Setting <c>true</c> starts accepting clients on a background thread.
+    /// The listener itself starts before the setter returns, so a bind error is thrown to the caller.
     /// </summary>
     public bool Listening
     {
@@ -72,16 +73,20 @@ public class Server : IDisposable
 
             if (_listening != value)
             {
-                _listening = value;
-
-                if (_listening)
+                if (value)
                 {
+                    // The listener starts in case of a bind exception
+                    _listener.Start();
+
+                    _listening = true;
                     _listeningTask = _listeningTask != null
                         ? _listeningTask.ContinueWith(t => ListeningCore())
                         : Task.Run(ListeningCore);
                 }
                 else
                 {
+                    _listening = false;
+
                     try { _listener?.Stop(); }
                     catch { /* ignored */ }
                 }
@@ -274,16 +279,16 @@ public class Server : IDisposable
         if (Listening)
             return;
 
+        _listener.Start();
         _listening = true;
+
         await ListeningCore();
     }
     private async Task ListeningCore()
     {
-        _listener.Start();
-
-        while (Listening)
+        try
         {
-            try
+            while (Listening)
             {
                 var tcpClient = await _listener.AcceptTcpClientAsync();
 
@@ -292,17 +297,20 @@ public class Server : IDisposable
                 Task.Run(() => ProcessClient(tcpClient));
 #pragma warning restore 4014
             }
-            catch (Exception ex)
+        }
+        catch (Exception ex)
+        {
+            if (Listening)
             {
-                if (Listening)
-                    ClientConnectingError?.Invoke(this, new ServerClientConnectExceptionEventArgs(ex));
-
-                break;
+                _listening = false;
+                ClientConnectingError?.Invoke(this, new ServerClientConnectExceptionEventArgs(ex));
             }
         }
-
-        try { _listener?.Stop(); }
-        catch { /* ignored */ }
+        finally
+        {
+            try { _listener?.Stop(); }
+            catch { /* ignored */ }
+        }
     }
     private async void ProcessClient(TcpClient tcpClient)
     {
