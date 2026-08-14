@@ -194,22 +194,41 @@ public sealed class NetworkConnection : IDisposable
 
     private async void OnTrackMessage(TrackMessage message)
     {
-        if (message.InResponseToId != 0)
-            OnTrackMessageResponse(message);
-        else
+        try
         {
-            var response = new TrackMessage
+            if (message.InResponseToId != 0)
+                OnTrackMessageResponse(message);
+            else
             {
-                MessageId = Interlocked.Increment(ref _messageId),
-                InResponseToId = message.MessageId
-            };
+                var response = new TrackMessage
+                {
+                    MessageId = Interlocked.Increment(ref _messageId),
+                    InResponseToId = message.MessageId
+                };
 
-            if (message.Value is ControllerMethodInvokeModel invokeModel)
-            {
-                response.Value = await RemoteControllerMethodInvoke(message.MessageId, invokeModel);
-                await WriteAsync(response);
+                if (message.Value is ControllerMethodInvokeModel invokeModel)
+                {
+                    response.Value = await RemoteControllerMethodInvoke(message.MessageId, invokeModel);
+
+                    try
+                    {
+                        await WriteAsync(response);
+                    }
+                    catch (NetworkSerializationException e)
+                    {
+                        response.Value = new ControllerMethodInvokeResultModel
+                        {
+                            ExceptionCode = (int)NetworkControllerInvocationExceptionType.DataReceivingError,
+                            ExceptionMessage = e.Message,
+                            FullException = e.ToString()
+                        };
+
+                        await WriteAsync(response);
+                    }
+                }
             }
         }
+        catch { /* ignored */ }
     }
     private void OnTrackMessageResponse(TrackMessage message)
     {
