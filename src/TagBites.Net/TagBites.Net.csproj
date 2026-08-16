@@ -16,6 +16,7 @@
     <Description>Lightweight and simple TCP client-server .NET library with RMI support.</Description>
     <PackageTags>tcp; ip; sockets; networking; server; client; client-server; rmi</PackageTags>
     <PackageProjectUrl>https://www.tagbites.com/net</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
   </PropertyGroup>
 
   <!-- References -->
