@@ -7,7 +7,7 @@ description: How values travel over the connection and how to replace the serial
 
 Not every message goes through the serializer:
 
-- `string`, primitive types and `DateTime` values are encoded directly with the configured `Encoding` - no serializer involved.
+- primitive types, `string` and `DateTime` values are encoded directly with the configured `Encoding` - no serializer involved.
 - `byte[]` is sent as raw bytes, also bypassing the serializer entirely - so sending binary data is cheap compared to serializing an equivalent wrapper object.
 - Any other object is sent as its type name followed by the bytes produced by the configured serializer.
 
@@ -17,7 +17,7 @@ There is no hard message-size limit enforced by the library beyond what fits in 
 
 ## Default serializer
 
-By default [Json.NET](https://www.newtonsoft.com/json) is used, with the following implementation:
+By default [Newtonsoft.Json](https://www.newtonsoft.com/json) is used, with the following implementation:
 
 ```csharp
 public class NewtonsoftJsonSerializer : INetworkSerializer
@@ -76,9 +76,7 @@ public class SystemTextJsonSerializer : INetworkSerializer
 
     public SystemTextJsonSerializer()
     {
-        // Mirrors the intent of TypeNameHandling.Auto in the built-in Json.NET serializer - only enable
-        // polymorphic/dynamic type resolution if you fully trust the remote side (see the security note below).
-        _options = new JsonSerializerOptions();
+        _options = new JsonSerializerOptions(); // Provide custom options
     }
 
     public void Serialize(Stream stream, object value)

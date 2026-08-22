@@ -35,7 +35,7 @@ To enable authentication, subscribe to `ClientAuthenticate` event. To authentica
 
 ## Identity fallback
 
-If the handler sets `Authenticated = true` but does not explicitly set `Identity`, the server falls back to `Credentials.UserName`. If the client connects **without** passing a `ClientCredentials` instance at all, `Credentials` will be `null`, and the fallback throws a `NullReferenceException` during the connection procedure - the server reports it through `ClientConnectingError` and closes the connection. Either always set `Identity` explicitly, or make sure clients always pass a `ClientCredentials` object when authentication is enabled.
+If the handler sets `Authenticated = true` but does not explicitly set `Identity`, the server falls back to `Credentials.UserName`. If the client connects **without** passing a `ClientCredentials` instance at all, the server reports it through `ClientConnectingError` and closes the connection. Either always set `Identity` explicitly, or make sure clients always pass a `ClientCredentials` object when authentication is enabled.
 
 ## SSL/TLS
 
@@ -50,4 +50,4 @@ var client = new Client("127.0.0.1", 8200);
 await client.ConnectSslAsync();          // or ConnectSslAsync("server-name") for cert name validation
 ```
 
-Internally this wraps the socket in an `SslStream` and negotiates TLS 1.2 (and TLS 1.3 on .NET 7+). By default, the client rejects any certificate that has policy errors (e.g. self-signed, untrusted root). To accept such certificates (e.g. in development), subclass `Client` and override the `protected virtual bool OnValidateServerCertificate(...)` method.
+Internally this wraps the socket in an `SslStream` and negotiates TLS 1.2 (and TLS 1.3 on .NET 7+).

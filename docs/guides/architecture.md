@@ -35,9 +35,3 @@ Messages can be plain serializable objects (`SendAsync`/`Received`) or, when usi
 4. If no controller was registered ahead of time, `ControllerResolve` fires, letting you create and return an instance on demand.
 
 See [RMI advanced](rmi.md) for exception propagation, async methods, and supported parameter/return types.
-
-## Wire protocol
-
-Messages travel in a small binary frame: a header with correlation ids and the payload kind, followed by length-prefixed content. The format is internal to the library - both ends of a connection must be TagBites.Net. The practical consequences - which values bypass the serializer and the absence of a built-in size limit - are described in [Serialization](serialization.md).
-
-TLS/SSL is supported natively - see [SSL/TLS](authentication.md#ssltls).

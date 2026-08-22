@@ -29,8 +29,6 @@ The event args type differs depending on where you subscribe:
   - `object Controller` - set this to the instance you want to use.
 - On `Server`, the event is `EventHandler<ServerClientControllerResolveEventArgs>`, which additionally exposes `ServerClient Client` (the specific client the call came from) via its base `ServerClientEventArgs`.
 
-There is no `Handled`/`Cancel` flag - the first subscriber (in the order events were added) that sets a non-null `Controller` wins, and the rest are skipped.
-
 ## Supported method signatures
 
 Controller methods can:
