@@ -14,7 +14,7 @@ var credentials = new ClientCredentials()
 var client = new Client("127.0.0.1", 8200, credentials);
 ```
 
-A `ClientCredentials` object allows passing basic authentication info, but derived class instance is also supported.
+A [`ClientCredentials`](https://tagbites.com/api/tagbites.net.clientcredentials/) object allows passing basic authentication info, but derived class instance is also supported.
 
 ## Server side
 ```csharp
@@ -31,7 +31,7 @@ server.ClientAuthenticate += (s, e) =>
 bool MyValidateMethod(ClientCredentials credentials) { ... }
 ```
 
-To enable authentication, subscribe to `ClientAuthenticate` event. To authenticate the user, the `Authenticated` property must be set to `true`, otherwise `ClientAuthenticationException` exception will be thrown on the client's side.
+To enable authentication, subscribe to `ClientAuthenticate` event. To authenticate the user, the `Authenticated` property must be set to `true`, otherwise [`ClientAuthenticationException`](https://tagbites.com/api/tagbites.net.clientauthenticationexception/) exception will be thrown on the client's side.
 
 ## Identity fallback
 

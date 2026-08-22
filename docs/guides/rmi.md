@@ -23,11 +23,11 @@ server.ControllerResolve += (s, e) =>
 
 The event args type differs depending on where you subscribe:
 
-- On `Client`/`ServerClient` (which both derive from the `NetworkClient` base), the event is `EventHandler<NetworkConnectionControllerResolveEventArgs>` with properties:
+- On [`Client`](https://tagbites.com/api/tagbites.net.client/)/[`ServerClient`](https://tagbites.com/api/tagbites.net.serverclient/) (which both derive from the [`NetworkClient`](https://tagbites.com/api/tagbites.net.networkclient/) base), the event is `EventHandler<NetworkConnectionControllerResolveEventArgs>` with properties:
   - `string ControllerTypeName` - assembly-qualified-style name of the requested controller interface.
   - `Type ControllerType` - the resolved `Type`, or `null` if it couldn't be loaded via `Type.GetType(...)`.
   - `object Controller` - set this to the instance you want to use.
-- On `Server`, the event is `EventHandler<ServerClientControllerResolveEventArgs>`, which additionally exposes `ServerClient Client` (the specific client the call came from) via its base `ServerClientEventArgs`.
+- On [`Server`](https://tagbites.com/api/tagbites.net.server/), the event is `EventHandler<ServerClientControllerResolveEventArgs>`, which additionally exposes `ServerClient Client` (the specific client the call came from) via its base [`ServerClientEventArgs`](https://tagbites.com/api/tagbites.net.serverclienteventargs/).
 
 ## Supported method signatures
 
@@ -52,7 +52,7 @@ Overloads are supported - the remote call is matched by method name **and** exac
 
 ## Exception propagation
 
-Exceptions thrown inside a controller method on the remote side propagate back to the caller, but **always wrapped** in `NetworkControllerInvocationException` - the original exception type is never rethrown as-is:
+Exceptions thrown inside a controller method on the remote side propagate back to the caller, but **always wrapped** in [`NetworkControllerInvocationException`](https://tagbites.com/api/tagbites.net.networkcontrollerinvocationexception/) - the original exception type is never rethrown as-is:
 
 ```csharp
 public class ChatServer : IChatServer
@@ -80,7 +80,7 @@ catch (NetworkControllerInvocationException ex)
 }
 ```
 
-`NetworkControllerInvocationException.Type` (`NetworkControllerInvocationExceptionType`) tells you *why* the call failed:
+`NetworkControllerInvocationException.Type` ([`NetworkControllerInvocationExceptionType`](https://tagbites.com/api/tagbites.net.networkcontrollerinvocationexceptiontype/)) tells you *why* the call failed:
 
 | Value | Meaning |
 |---|---|

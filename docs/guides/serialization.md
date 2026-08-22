@@ -55,7 +55,7 @@ public class NewtonsoftJsonSerializer : INetworkSerializer
 
 ## Custom serializer
 
-`NetworkConfig` accepts any implementation of `INetworkSerializer`:
+[`NetworkConfig`](https://tagbites.com/api/tagbites.net.networkconfig/) accepts any implementation of [`INetworkSerializer`](https://tagbites.com/api/tagbites.net.inetworkserializer/):
 
 ```csharp
 public interface INetworkSerializer

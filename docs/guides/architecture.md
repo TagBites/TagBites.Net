@@ -7,9 +7,9 @@ description: Main types, threading model, message flow and wire protocol.
 
 TagBites.Net is a TCP client-server library built around three main types:
 
-- **`Client`** - connects to a single `Server` and exchanges messages with it.
-- **`Server`** - listens for incoming TCP connections and communicates with any number of connected clients.
-- **`ServerClient`** - the server-side representation of a single connected client (returned by `Server.GetClients()` and passed in server events, e.g. `e.Client`).
+- **[`Client`](https://tagbites.com/api/tagbites.net.client/)** - connects to a single `Server` and exchanges messages with it.
+- **[`Server`](https://tagbites.com/api/tagbites.net.server/)** - listens for incoming TCP connections and communicates with any number of connected clients.
+- **[`ServerClient`](https://tagbites.com/api/tagbites.net.serverclient/)** - the server-side representation of a single connected client (returned by `Server.GetClients()` and passed in server events, e.g. `e.Client`).
 
 Messages can be plain serializable objects (`SendAsync`/`Received`) or, when using RMI, method calls made through generated proxy interfaces (see [RMI advanced](rmi.md)).
 
@@ -23,7 +23,7 @@ Messages can be plain serializable objects (`SendAsync`/`Received`) or, when usi
 ## Message flow (plain messages)
 
 1. `Client.ConnectAsync()` opens a TCP connection and (if configured) performs authentication - see [Authentication](authentication.md).
-2. `Client.SendAsync(message)` serializes the message using the configured `INetworkSerializer` (see [Configuration](configuration.md)) and writes it to the socket.
+2. `Client.SendAsync(message)` serializes the message using the configured [`INetworkSerializer`](https://tagbites.com/api/tagbites.net.inetworkserializer/) (see [Configuration](configuration.md)) and writes it to the socket.
 3. On the receiving side, the `Received` event fires with the deserialized message.
 4. If deserialization or transport fails, `ReceivedError` fires instead of `Received`.
 

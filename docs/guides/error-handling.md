@@ -16,7 +16,7 @@ client.ReceivedError += (s, e) =>
 };
 ```
 
-On `Client` this is `NetworkConnectionMessageErrorEventArgs` with a single `Exception` property. On `Server`/`ServerClient` it's `ServerClientMessageErrorEventArgs`, which adds `Exception` alongside the inherited `Client` (the `ServerClient` that sent the offending message).
+On [`Client`](https://tagbites.com/api/tagbites.net.client/) this is [`NetworkConnectionMessageErrorEventArgs`](https://tagbites.com/api/tagbites.net.networkconnectionmessageerroreventargs/) with a single `Exception` property. On [`Server`](https://tagbites.com/api/tagbites.net.server/)/[`ServerClient`](https://tagbites.com/api/tagbites.net.serverclient/) it's [`ServerClientMessageErrorEventArgs`](https://tagbites.com/api/tagbites.net.serverclientmessageerroreventargs/), which adds `Exception` alongside the inherited `Client` (the `ServerClient` that sent the offending message).
 
 ## Handling disconnects and reconnecting
 
